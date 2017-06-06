@@ -9,11 +9,12 @@ import (
 )
 
 type TClient struct {
-	close     bool
 	addr      string
 	wg        sync.WaitGroup
 	pf        Protocol
 	transport *Transport
+	close     bool
+	mu        sync.Mutex
 }
 
 func NewTClient(addr string, pf Protocol) (*TClient, error) {
@@ -30,7 +31,10 @@ func (p *TClient) Send(data []byte) error {
 }
 
 func (p *TClient) Close() {
+	p.mu.Lock()
 	p.close = true
+	p.mu.Unlock()
+
 	p.transport.Close()
 	p.wg.Wait()
 }
@@ -52,7 +56,6 @@ func (p *TClient) connect() error {
 	p.transport.BeginWork()
 	p.pf.OnNetMade(p.transport)
 
-	p.close = false
 	go p.handlerConnect()
 	return nil
 }
@@ -76,15 +79,18 @@ func (p *TClient) handlerConnect() {
 }
 
 func (p *TClient) recon() {
+	p.mu.Lock()
 	if p.close {
+		p.mu.Unlock()
 		return
 	}
-	p.close = true
-	for p.close {
-		err := p.connect()
-		if err != nil {
-			time.Sleep(5 * time.Second)
-		}
+	p.mu.Unlock()
+
+	err := p.connect()
+	for err != nil {
+		time.Sleep(5 * time.Second)
+		err = p.connect()
+		fmt.Println("recon,", err)
 	}
 }
 
