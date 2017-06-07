@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -77,17 +78,30 @@ func (t *Transport) beginToRead() {
 		headLen uint64
 		err     error
 	)
+	// buff size = 4k
 	r := bufio.NewReader(t.con)
 	for {
+		// set deadline
+		// t.con.SetReadDeadline(30 * time.Second)
+
 		err = binary.Read(r, binary.LittleEndian, &headLen)
 		if err != nil {
 			return
 		}
 		buf := make([]byte, headLen)
-		_, err := r.Read(buf)
-		if err != nil {
-			fmt.Println("-->transport read err", err)
-			return
+		index := 0
+		try := 0
+		for index < int(headLen) {
+			n, err := io.ReadFull(r, buf[index:])
+			if err != nil {
+				e, ok := err.(net.Error)
+				if !ok || !e.Temporary() || try >= 3 {
+					fmt.Println("-->transport read err", err)
+					return
+				}
+				try++
+			}
+			index += n
 		}
 		t.readChan <- buf
 	}
