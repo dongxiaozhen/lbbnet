@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 type TServer struct {
@@ -46,7 +47,7 @@ func (p *TServer) accept() {
 		}
 		con.SetReadBuffer(100)
 		con.SetNoDelay(true)
-		t := NewTransport(con)
+		t := NewTransport(con, 3*time.Second)
 		t.BeginWork()
 		p.wg.Add(1)
 		go p.handler(t)

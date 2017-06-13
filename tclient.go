@@ -52,7 +52,7 @@ func (p *TClient) connect() error {
 	}
 
 	// 设置成员变量p.transport，不能放在go后边，会导致成员变量为空
-	p.transport = NewTransport(con)
+	p.transport = NewTransport(con, 3*time.Second)
 	p.transport.BeginWork()
 	p.pf.OnNetMade(p.transport)
 

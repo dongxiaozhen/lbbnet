@@ -8,20 +8,40 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Transport struct {
-	con       *net.TCPConn
+	con       *TSocket
 	readChan  chan []byte
 	writeChan chan []byte
 	close     bool
 	sync.RWMutex
 }
 
+type TSocket struct {
+	*net.TCPConn
+	timeout time.Duration
+}
+
+func (c *TSocket) Read(b []byte) (int, error) {
+	t := time.Now().Add(c.timeout)
+	err := c.SetReadDeadline(t)
+	if err != nil {
+		return 0, err
+	}
+	return c.Read(b)
+}
+func (c *TSocket) Write(b []byte) (int, error) {
+	t := time.Now().Add(c.timeout)
+	c.SetWriteDeadline(t)
+	return c.Write(b)
+}
+
 var ErrTransportClose = errors.New("链接断开")
 
-func NewTransport(con *net.TCPConn) *Transport {
-	return &Transport{con: con, readChan: make(chan []byte, 10), writeChan: make(chan []byte, 10)}
+func NewTransport(con *net.TCPConn, timeout time.Duration) *Transport {
+	return &Transport{con: &TSocket{con, timeout}, readChan: make(chan []byte, 10), writeChan: make(chan []byte, 10)}
 }
 
 func (t *Transport) ReadData() *NetPacket {
