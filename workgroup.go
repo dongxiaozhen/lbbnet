@@ -16,6 +16,7 @@ type WorkTask struct {
 }
 
 func NewWorkTask(plen, clen int) *WorkTask {
+	fmt.Println("NewWorkTask", plen, clen)
 	return &WorkTask{pipeLen: uint64(plen), cacheLen: clen, process: make([]chan func(), plen)}
 }
 

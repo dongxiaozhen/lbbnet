@@ -27,13 +27,16 @@ type TSocket struct {
 func (c *TSocket) Read(b []byte) (int, error) {
 	t := time.Now().Add(c.timeout)
 	c.SetReadDeadline(t)
-	defer c.SetReadDeadline(time.Time{})
-	return c.Read(b)
+	n, err := c.TCPConn.Read(b)
+	c.SetReadDeadline(time.Time{})
+	return n, err
 }
 func (c *TSocket) Write(b []byte) (int, error) {
 	t := time.Now().Add(c.timeout)
 	c.SetWriteDeadline(t)
-	return c.Write(b)
+	n, err := c.TCPConn.Write(b)
+	c.SetWriteDeadline(time.Time{})
+	return n, err
 }
 
 var ErrTransportClose = errors.New("链接断开")
@@ -143,26 +146,30 @@ func (t *Transport) beginToWrite() {
 		headLen uint64
 		err     error
 	)
-	w := bufio.NewWriter(t.con)
+
 	for buf := range t.writeChan {
 		fmt.Println("write begin")
+		if buf == nil {
+			fmt.Println("write nil return")
+			continue
+		}
 		headLen = uint64(len(buf))
-		err = binary.Write(w, binary.LittleEndian, headLen)
+		err = binary.Write(t.con, binary.LittleEndian, headLen)
 		if err != nil {
 			fmt.Println("write head err")
 			return
 		}
 		fmt.Println("write begin bogy")
-		n, err := w.Write(buf)
+		n, err := t.con.Write(buf)
 		if err != nil || n != len(buf) {
 			fmt.Println("--->transport write err", err)
 			return
 		}
-		fmt.Println("write begin flush")
-		if err = w.Flush(); err != nil {
-			fmt.Println("--->transport flush err", err)
-			return
-		}
+		// fmt.Println("write begin flush")
+		// if err = w.Flush(); err != nil {
+		// fmt.Println("--->transport flush err", err)
+		// return
+		// }
 		fmt.Println("write end")
 	}
 }

@@ -14,6 +14,7 @@ type TClient struct {
 	pf        Protocol
 	transport *Transport
 	close     bool
+	run       bool
 	mu        sync.Mutex
 }
 
@@ -27,6 +28,9 @@ func NewTClient(addr string, pf Protocol) (*TClient, error) {
 }
 
 func (p *TClient) Send(data []byte) error {
+	if !p.run {
+		return errors.New("tclient close")
+	}
 	return p.transport.WriteData(data)
 }
 
@@ -63,6 +67,7 @@ func (p *TClient) connect() error {
 func (p *TClient) handlerConnect() {
 	defer func() {
 		fmt.Println("reconnect")
+		p.run = false
 		p.recon()
 	}()
 
@@ -100,6 +105,8 @@ func (p *TClient) handlerData() {
 		time.Sleep(2 * time.Second)
 	}()
 
+	p.run = true
+	fmt.Println("tclient run true")
 	for {
 		if s := p.transport.ReadData(); s == nil {
 			fmt.Println("client handlerData return")
