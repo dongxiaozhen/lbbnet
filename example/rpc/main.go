@@ -9,7 +9,7 @@ import (
 
 func main() {
 	t := lbbnet.Rpc{}
-	err := t.Open("127.0.0.01:9099")
+	err := t.Open("127.0.0.01:9099", 5*time.Second)
 	if err != nil {
 		fmt.Println("bb", err)
 		return

@@ -45,12 +45,15 @@ func main() {
 
 	hello := &Hello{}
 	hello.init()
-	s := lbbnet.NewTServer(":9099", hello)
-	<-closeChan
+	s, err := lbbnet.NewTServer(":9099", hello, 2*time.Second)
+	if err != nil {
+		fmt.Println("create server err", err)
+		return
+	}
 
+	<-closeChan
 	// close listern
 	s.Close()
-
 	// not hander new data, wait all done
 	hello.Close()
 }

@@ -8,34 +8,36 @@ import (
 )
 
 type TServer struct {
-	addr string
-	pf   Protocol
-	l    *net.TCPListener
-	wg   sync.WaitGroup
+	addr    string
+	timeout time.Duration
+	pf      Protocol
+	l       *net.TCPListener
+	wg      sync.WaitGroup
 }
 
-func NewTServer(addr string, pf Protocol) *TServer {
-	t := &TServer{addr: addr, pf: pf}
-	t.listern()
-	return t
+func NewTServer(addr string, pf Protocol, timeout time.Duration) (*TServer, error) {
+	t := &TServer{addr: addr, pf: pf, timeout: timeout}
+	err := t.listern()
+	return t, err
 }
 
 func (p *TServer) Close() {
 	p.l.Close()
 }
 
-func (p *TServer) listern() {
+func (p *TServer) listern() error {
 	ld, err := net.ResolveTCPAddr("tcp", p.addr)
 	if err != nil {
 		fmt.Println("%#v", err)
-		return
+		return err
 	}
 	p.l, err = net.ListenTCP("tcp", ld)
 	if err != nil {
 		fmt.Println("%#v", err)
-		return
+		return err
 	}
 	go p.accept()
+	return nil
 }
 
 func (p *TServer) accept() {
@@ -47,7 +49,7 @@ func (p *TServer) accept() {
 		}
 		// con.SetReadBuffer(100)
 		// con.SetNoDelay(true)
-		t := NewTransport(con, 3*time.Second)
+		t := NewTransport(con, p.timeout)
 		t.BeginWork()
 		p.wg.Add(1)
 		go p.handler(t)

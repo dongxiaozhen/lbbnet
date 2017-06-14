@@ -31,12 +31,14 @@ type Rpc struct {
 	mp  map[uint32]*RpcRet
 	seq uint32
 	sync.Mutex
+	timeout time.Duration
 }
 
-func (p *Rpc) Open(addr string) error {
+func (p *Rpc) Open(addr string, timeout time.Duration) error {
 	var err error
+	p.timeout = timeout
 	p.mp = make(map[uint32]*RpcRet)
-	p.t, err = NewTClient(addr, p)
+	p.t, err = NewTClient(addr, p, p.timeout)
 	if err != nil {
 		return err
 	}

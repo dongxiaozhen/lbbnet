@@ -113,7 +113,7 @@ func (t *Transport) beginToRead() {
 
 		err = binary.Read(r, binary.LittleEndian, &headLen)
 		if err != nil {
-			fmt.Println("--------t read head err")
+			fmt.Println("--------t read head err", err)
 			return
 		}
 		buf := make([]byte, headLen)
@@ -156,7 +156,7 @@ func (t *Transport) beginToWrite() {
 		headLen = uint64(len(buf))
 		err = binary.Write(t.con, binary.LittleEndian, headLen)
 		if err != nil {
-			fmt.Println("write head err")
+			fmt.Println("write head err", err)
 			return
 		}
 		fmt.Println("write begin bogy")
