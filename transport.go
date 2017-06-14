@@ -26,10 +26,8 @@ type TSocket struct {
 
 func (c *TSocket) Read(b []byte) (int, error) {
 	t := time.Now().Add(c.timeout)
-	err := c.SetReadDeadline(t)
-	if err != nil {
-		return 0, err
-	}
+	c.SetReadDeadline(t)
+	defer c.SetReadDeadline(time.Time{})
 	return c.Read(b)
 }
 func (c *TSocket) Write(b []byte) (int, error) {
@@ -47,6 +45,7 @@ func NewTransport(con *net.TCPConn, timeout time.Duration) *Transport {
 func (t *Transport) ReadData() *NetPacket {
 	s, ok := <-t.readChan
 	if !ok {
+		fmt.Println("t readData nil")
 		return nil
 	}
 
@@ -55,6 +54,7 @@ func (t *Transport) ReadData() *NetPacket {
 	p := &NetPacket{Rw: t}
 	err := p.Decoder(s)
 	if err != nil {
+		fmt.Println("t  decoder nil")
 		return nil
 	}
 	return p
@@ -75,6 +75,7 @@ func (t *Transport) Close() {
 func (t *Transport) WriteData(data []byte) error {
 	t.RLock()
 	defer t.RUnlock()
+	fmt.Println("----t writeData begin")
 
 	if t.close {
 		fmt.Println("transport end", string(data))
@@ -82,6 +83,7 @@ func (t *Transport) WriteData(data []byte) error {
 	}
 
 	t.writeChan <- data
+	fmt.Println("----t writeData over")
 	return nil
 }
 
@@ -99,19 +101,23 @@ func (t *Transport) beginToRead() {
 		err     error
 	)
 	// buff size = 4k
+	fmt.Println("t begintoread")
 	r := bufio.NewReader(t.con)
 	for {
 		// set deadline
 		// t.con.SetReadDeadline(30 * time.Second)
+		fmt.Println("--------t read begin")
 
 		err = binary.Read(r, binary.LittleEndian, &headLen)
 		if err != nil {
+			fmt.Println("--------t read head err")
 			return
 		}
 		buf := make([]byte, headLen)
 		index := 0
 		try := 0
 		for index < int(headLen) {
+			fmt.Println("--------t read full begin", index, headLen)
 			n, err := io.ReadFull(r, buf[index:])
 			if err != nil {
 				e, ok := err.(net.Error)
@@ -122,7 +128,9 @@ func (t *Transport) beginToRead() {
 				try++
 			}
 			index += n
+			fmt.Println("--------t read full", index, headLen)
 		}
+		fmt.Println(" t read over")
 		t.readChan <- buf
 	}
 }
@@ -137,20 +145,24 @@ func (t *Transport) beginToWrite() {
 	)
 	w := bufio.NewWriter(t.con)
 	for buf := range t.writeChan {
+		fmt.Println("write begin")
 		headLen = uint64(len(buf))
 		err = binary.Write(w, binary.LittleEndian, headLen)
 		if err != nil {
+			fmt.Println("write head err")
 			return
 		}
+		fmt.Println("write begin bogy")
 		n, err := w.Write(buf)
 		if err != nil || n != len(buf) {
 			fmt.Println("--->transport write err", err)
 			return
 		}
+		fmt.Println("write begin flush")
 		if err = w.Flush(); err != nil {
 			fmt.Println("--->transport flush err", err)
 			return
 		}
-
+		fmt.Println("write end")
 	}
 }

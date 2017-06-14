@@ -45,8 +45,8 @@ func (p *TServer) accept() {
 			fmt.Println("accept err %#v", err)
 			return
 		}
-		con.SetReadBuffer(100)
-		con.SetNoDelay(true)
+		// con.SetReadBuffer(100)
+		// con.SetNoDelay(true)
 		t := NewTransport(con, 3*time.Second)
 		t.BeginWork()
 		p.wg.Add(1)
@@ -63,8 +63,10 @@ func (p *TServer) handler(t *Transport) {
 	defer p.pf.OnNetLost(t)
 
 	for {
+		fmt.Println("ts readdata")
 		s := t.ReadData()
 		if s == nil {
+			fmt.Println("ts readdata nil")
 			return
 		}
 		p.pf.OnNetData(s)

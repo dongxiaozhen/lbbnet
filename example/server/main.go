@@ -21,6 +21,7 @@ func (h *Hello) init() {
 }
 
 func fa(data *lbbnet.NetPacket) {
+	fmt.Println("fa start")
 	time.Sleep(1 * time.Second)
 	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
@@ -29,6 +30,7 @@ func fa(data *lbbnet.NetPacket) {
 	data.Rw.WriteData(buf)
 }
 func fb(data *lbbnet.NetPacket) {
+	fmt.Println("fb start")
 	time.Sleep(1 * time.Second)
 	suf := fmt.Sprintf("2 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)

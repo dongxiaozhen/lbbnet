@@ -44,10 +44,13 @@ func (p *Rpc) Open(addr string) error {
 }
 
 func (p *Rpc) OnNetMade(t *Transport) {
+	fmt.Println("---------made")
 }
 func (p *Rpc) OnNetLost(t *Transport) {
+	fmt.Println("---------lost")
 }
 func (p *Rpc) OnNetData(t *NetPacket) {
+	fmt.Println("---------data")
 	p.Lock()
 	defer p.Unlock()
 

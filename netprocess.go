@@ -28,12 +28,13 @@ func (h *NetProcess) RegisterFunc(packType uint32, f func(*NetPacket)) error {
 }
 
 func (h *NetProcess) OnNetMade(t *Transport) {
-	fmt.Println("t made")
+	fmt.Println("------------t made")
 }
 func (h *NetProcess) OnNetLost(t *Transport) {
-	fmt.Println("t lost")
+	fmt.Println("------------t lost")
 }
 func (h *NetProcess) OnNetData(data *NetPacket) {
+	fmt.Println("------------data")
 	if h.close {
 		fmt.Println("process close", *data)
 		return
