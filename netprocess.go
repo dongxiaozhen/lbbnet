@@ -9,6 +9,7 @@ type NetProcess struct {
 	close bool
 	task  *WorkTask
 	mp    map[uint32]func(*NetPacket)
+	defun func(*NetPacket)
 }
 
 func (h *NetProcess) Init() {
@@ -18,6 +19,11 @@ func (h *NetProcess) Init() {
 }
 
 var ErrFuncFind = errors.New("函数以注册")
+
+func (h *NetProcess) RegisterDefFunc(f func(*NetPacket)) error {
+	h.defun = f
+	return nil
+}
 
 func (h *NetProcess) RegisterFunc(packType uint32, f func(*NetPacket)) error {
 	if _, ok := h.mp[packType]; ok {
@@ -50,7 +56,11 @@ func (h *NetProcess) OnNetData(data *NetPacket) {
 }
 
 func (h *NetProcess) getHandler(packetType uint32) func(*NetPacket) {
-	return h.mp[packetType]
+	f, ok := h.mp[packetType]
+	if ok {
+		return f
+	}
+	return h.defun
 }
 
 func (h *NetProcess) Close() {
