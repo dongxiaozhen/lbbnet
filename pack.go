@@ -37,6 +37,9 @@ func (t *NetPacket) Decoder(data []byte) error {
 }
 
 func (t *NetPacket) Encoder(data []byte) []byte {
+	if t == nil {
+		return nil
+	}
 	buf := make([]byte, LenOfNetPacket+len(data))
 	fmt.Printf("encoder %d,%d,%d,%d,%d,%d\n", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
 	binary.LittleEndian.PutUint64(buf[:8], t.UserId)
@@ -46,5 +49,20 @@ func (t *NetPacket) Encoder(data []byte) []byte {
 	binary.LittleEndian.PutUint32(buf[20:24], t.SeqId)
 	binary.LittleEndian.PutUint16(buf[24:26], t.ReqType)
 	copy(buf[LenOfNetPacket:], data)
+	return buf
+}
+func (t *NetPacket) Serialize() []byte {
+	if t == nil {
+		return nil
+	}
+	buf := make([]byte, LenOfNetPacket+len(t.Data))
+	fmt.Printf("encoder %d,%d,%d,%d,%d,%d\n", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
+	binary.LittleEndian.PutUint64(buf[:8], t.UserId)
+	binary.LittleEndian.PutUint32(buf[8:12], t.ServerId)
+	binary.LittleEndian.PutUint32(buf[12:16], t.PacketType)
+	binary.LittleEndian.PutUint32(buf[16:20], t.SessionId)
+	binary.LittleEndian.PutUint32(buf[20:24], t.SeqId)
+	binary.LittleEndian.PutUint16(buf[24:26], t.ReqType)
+	copy(buf[LenOfNetPacket:], t.Data)
 	return buf
 }

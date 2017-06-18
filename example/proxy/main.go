@@ -18,10 +18,10 @@ var foundServer string
 
 func main() {
 	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
-	flag.IntVar(&cfg.Port, "port", 9999, "server port")
-	flag.StringVar(&cfg.ServerId, "sid", "client_id_1", "server id")
-	flag.StringVar(&cfg.ServerName, "sname", "client_id", "server name")
-	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:8888", "monitor addr")
+	flag.IntVar(&cfg.Port, "port", 2222, "server port")
+	flag.StringVar(&cfg.ServerId, "sid", "proxy_id_1", "server id")
+	flag.StringVar(&cfg.ServerName, "sname", "proxy_name", "server name")
+	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:2221", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "serverNode_1", "found server name")
 	flag.Parse()
@@ -38,9 +38,8 @@ func main() {
 		return
 	}
 
-	hello := &Hello{}
-	hello.init()
-	s, err := lbbnet.NewTServer(":9099", hello, 2*time.Second)
+	sproxy := &Sproxy{}
+	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 2*time.Second)
 	if err != nil {
 		fmt.Println("create server err", err)
 		return
@@ -49,6 +48,8 @@ func main() {
 	go func() {
 		tick := time.NewTicker(2 * time.Second)
 		var oldSer = make(map[string]*lbbconsul.ServiceInfo)
+
+		cproxy := &Cproxy{}
 		for range tick.C {
 			err := lbbconsul.GConsulClient.DiscoverAliveService(foundServer)
 			if err != nil {
@@ -63,7 +64,10 @@ func main() {
 			for k, v := range services {
 				if _, ok := oldSer[k]; !ok {
 					go func(s *lbbconsul.ServiceInfo) {
-						sendData(s)
+						_, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", s.IP, s.Port), cproxy, 3*time.Second)
+						if err != nil {
+							fmt.Println("proxy client err", err)
+						}
 					}(v)
 				}
 			}
@@ -72,14 +76,15 @@ func main() {
 	}()
 
 	<-exist
+	s.Close()
 	lbbconsul.GConsulClient.Close()
 }
 
-func compareDiff(old, new map[string]*lbbconsul.ServiceInfo) (rem, update, add map[string]**lbbconsul.ServiceInfo) {
-	var rem1, update1, add1 []**lbbconsul.ServiceInfo
+func compareDiff(old, new map[string]*lbbconsul.ServiceInfo) (rem, update, add map[string]*lbbconsul.ServiceInfo) {
+	var rem1, update1, add1 []*lbbconsul.ServiceInfo
 	for k, v := range old {
 		if v2, ok := new[k]; ok {
-			if v2.Ip == v.Ip && v2.Port == v.Port {
+			if v2.IP == v.IP && v2.Port == v.Port {
 			} else {
 				update1 = append(update1, v2)
 			}
@@ -94,19 +99,19 @@ func compareDiff(old, new map[string]*lbbconsul.ServiceInfo) (rem, update, add m
 		}
 	}
 	if len(rem1) > 0 {
-		rem = make(map[string]**lbbconsul.ServiceInfo)
+		rem = make(map[string]*lbbconsul.ServiceInfo)
 		for index := range rem1 {
 			rem[rem1[index].ServiceID] = rem1[index]
 		}
 	}
 	if len(update1) > 0 {
-		update = make(map[string]**lbbconsul.ServiceInfo)
+		update = make(map[string]*lbbconsul.ServiceInfo)
 		for index := range update1 {
 			rem[update1[index].ServiceID] = update1[index]
 		}
 	}
 	if len(add1) > 0 {
-		add = make(map[string]**lbbconsul.ServiceInfo)
+		add = make(map[string]*lbbconsul.ServiceInfo)
 		for index := range add1 {
 			rem[add1[index].ServiceID] = add1[index]
 		}
@@ -117,80 +122,78 @@ func compareDiff(old, new map[string]*lbbconsul.ServiceInfo) (rem, update, add m
 var SM *ServerManager
 
 type ServerManager struct {
-	seq     int
-	clients map[int]*lbbnet.Transport
+	seq     uint32
+	clients map[*lbbnet.Transport]uint32
 	sync.Mutex
 }
 
-func newServerManager() {
-	return &ServerManager{0, make(map[int]*lbbnet.Transport)}
+func newServerManager() *ServerManager {
+	return &ServerManager{seq: 0, clients: make(map[*lbbnet.Transport]uint32)}
 }
-func (s *ServerManager) RemoveByTransport(t *lbbnet.Transport) {
+func (s *ServerManager) RemoveServer(t *lbbnet.Transport) {
 	s.Lock()
 	defer s.Unlock()
-	for id, tmp := range s.clients {
-		if tmp == t {
-			delete(s.clients, id)
-			break
-		}
-	}
+	delete(s.clients, t)
 }
 
-func (s *ServerManager) Remove(id int) {
-	s.Lock()
-	defer s.Unlock()
-	delete(s.clients, id)
-}
-
-func (s *ServerManager) SetServiceId(id int, conn *lbbnet.Transport) {
-	s.Lock()
-	defer s.Unlock()
-	s.clients[id] = conn
-}
-
-func (s *ServerManager) GetServiceId() int {
+func (s *ServerManager) AddServer(conn *lbbnet.Transport) {
 	s.Lock()
 	defer s.Unlock()
 	s.seq++
-	return s.seq
+	s.clients[conn] = s.seq
 }
 
-func (s *ServerManager) GetService(sid int) **lbbnet.Transport {
+func (s *ServerManager) GetService(t *lbbnet.Transport) uint32 {
 	s.Lock()
 	defer s.Unlock()
-	return s.clients[sid]
+	return s.clients[t]
+}
+
+func (s *ServerManager) GetServiceById(sid uint32) *lbbnet.Transport {
+	s.Lock()
+	defer s.Unlock()
+	for t, id := range s.clients {
+		if id == sid {
+			return t
+		}
+	}
+	return nil
 }
 
 type Sproxy struct {
-	seqid int
 }
 
 func (h *Sproxy) OnNetMade(t *lbbnet.Transport) {
-	id := SM.GetServiceId()
-	h.seqid = id
-	SM.SetServiceId(id, t)
+	SM.AddServer(t)
 }
 
 func (h *Sproxy) OnNetLost(t *lbbnet.Transport) {
-	SM.RemoveByTransport(t)
+	SM.RemoveServer(t)
 }
 
 func (h *Sproxy) OnNetData(data *lbbnet.NetPacket) {
-	data.ServerId = uint32(h.seqid)
+	id := SM.GetService(data.Rw)
+	data.ServerId = uint32(id)
 
-	// client[data.UserId%10].Send(data)
+	CM.GetClient(data.UserId).WriteData(data.Serialize())
 }
 
-type CM struct {
-	num     int
+var CM = &CManager{}
+
+type CManager struct {
 	clients []*lbbnet.Transport
 }
 
-func (c *CM) AddClient(t *lbbNet.Transport) {
+func (c *CManager) GetClient(sharding uint64) *lbbnet.Transport {
+	index := sharding % uint64(len(c.clients))
+	return c.clients[index]
+}
+
+func (c *CManager) AddClient(t *lbbnet.Transport) {
 	c.clients = append(c.clients, t)
 }
 
-func (c *CM) RemClient(t *lbbNet.Transport) {
+func (c *CManager) RemClient(t *lbbnet.Transport) {
 	for index := range c.clients {
 		if c.clients[index] == t {
 			c.clients = append(c.clients[0:index], c.clients[index+1:]...)
@@ -202,46 +205,17 @@ type Cproxy struct {
 }
 
 func (h *Cproxy) OnNetMade(t *lbbnet.Transport) {
-
+	CM.AddClient(t)
 }
 
 func (h *Cproxy) OnNetLost(t *lbbnet.Transport) {
+	CM.RemClient(t)
 }
 
 func (h *Cproxy) OnNetData(data *lbbnet.NetPacket) {
-}
-
-func sendData(service *lbbconsul.ServiceInfo) (lbbnet.TClient, error) {
-	t, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", service.Ip, service.Port), pdf, 3*time.Second)
-}
-
-func closeClient(sid string) {
-}
-
-type Hello struct {
-	close bool
-}
-
-func (h *Hello) OnNetMade(t *lbbnet.Transport) {
-	fmt.Println("connect mad")
-	go func() {
-		for i := 0; i < 1000; i++ {
-			time.Sleep(100 * time.Millisecond)
-			p := &lbbnet.NetPacket{UserId: 123, ServerId: 1, SessionId: 2, PacketType: uint32(1 + i%2)}
-			data := p.Encoder([]byte(fmt.Sprintf("client%d", i)))
-			t.WriteData(data)
-		}
-	}()
-}
-
-func (h *Hello) OnNetData(data *lbbnet.NetPacket) {
-	SM.GetService(data.ServerId)
-}
-func (h *Hello) OnNetLost(t *lbbnet.Transport) {
-	fmt.Println("connect lost")
-}
-
-func (h *Hello) Close() {
-	h.close = true
-	fmt.Println("hello close")
+	s := SM.GetServiceById(data.ServerId)
+	if s == nil {
+		return
+	}
+	s.WriteData(data.Serialize())
 }
