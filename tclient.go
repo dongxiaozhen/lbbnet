@@ -48,12 +48,12 @@ func (p *TClient) Close() {
 func (p *TClient) connect() error {
 	conn, err := net.Dial("tcp", p.addr)
 	if err != nil {
-		log.Debug("dial err")
+		log.Warn("dial err")
 		return err
 	}
 	con, ok := conn.(*net.TCPConn)
 	if !ok {
-		log.Debug("conver err")
+		log.Warn("conver err")
 		return errors.New("conv err")
 	}
 
@@ -111,7 +111,7 @@ func (p *TClient) handlerData() {
 	log.Debug("tclient run true")
 	for {
 		if s := p.transport.ReadData(); s == nil {
-			log.Debug("client handlerData return")
+			log.Warn("client handlerData return")
 			return
 		} else {
 			p.pf.OnNetData(s)

@@ -64,7 +64,7 @@ func (t *Transport) ReadData() *NetPacket {
 	p := &NetPacket{Rw: t}
 	err := p.Decoder(s)
 	if err != nil {
-		log.Debug("t  decoder nil")
+		log.Warn("t  decoder nil")
 		return nil
 	}
 	return p
@@ -88,7 +88,7 @@ func (t *Transport) WriteData(data []byte) error {
 	log.Debug("----t writeData begin")
 
 	if t.close {
-		log.Debug("transport end", string(data))
+		log.Warn("transport end", string(data))
 		return ErrTransportClose
 	}
 
@@ -114,13 +114,9 @@ func (t *Transport) beginToRead() {
 	log.Debug("t begintoread")
 	r := bufio.NewReader(t.con)
 	for {
-		// set deadline
-		// t.con.SetReadDeadline(30 * time.Second)
-		log.Debug("--------t read begin")
-
 		err = binary.Read(r, binary.LittleEndian, &headLen)
 		if err != nil {
-			log.Debug("--------t read head err", err)
+			log.Warn("--------t read head err", err)
 			return
 		}
 		buf := make([]byte, headLen)
@@ -132,7 +128,7 @@ func (t *Transport) beginToRead() {
 			if err != nil {
 				e, ok := err.(net.Error)
 				if !ok || !e.Temporary() || try >= 3 {
-					log.Debug("-->transport read err", err)
+					log.Warn("-->transport read err", err)
 					return
 				}
 				try++
@@ -155,28 +151,20 @@ func (t *Transport) beginToWrite() {
 	)
 
 	for buf := range t.writeChan {
-		log.Debug("write begin")
 		if buf == nil {
-			log.Debug("write nil return")
+			log.Warn("write nil return")
 			continue
 		}
 		headLen = uint64(len(buf))
 		err = binary.Write(t.con, binary.LittleEndian, headLen)
 		if err != nil {
-			log.Debug("write head err", err)
+			log.Warn("write head err", err)
 			return
 		}
-		log.Debug("write begin bogy")
 		n, err := t.con.Write(buf)
 		if err != nil || n != len(buf) {
-			log.Debug("--->transport write err", err)
+			log.Warn("--->transport write err", err)
 			return
 		}
-		// log.Debug("write begin flush")
-		// if err = w.Flush(); err != nil {
-		// log.Debug("--->transport flush err", err)
-		// return
-		// }
-		log.Debug("write end")
 	}
 }

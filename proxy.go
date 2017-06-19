@@ -101,7 +101,7 @@ func (c *CManager) RemClient(t *Transport) {
 	addr := t.RemoteAddr()
 	tclient := c.cs[addr]
 	if tclient == nil {
-		log.Debug("---------lbbnet------remove client empty", addr)
+		log.Warn("---------lbbnet------remove client empty", addr)
 		return
 	}
 	tclient.Close()
@@ -114,7 +114,7 @@ func (c *CManager) RemoveServerByAddr(addr string) {
 	defer c.Unlock()
 	t := c.cs[addr]
 	if t == nil {
-		log.Debug("-------consul--------remove client empty")
+		log.Warn("-------consul--------remove client empty")
 		return
 	}
 	delete(c.cs, addr)
@@ -181,7 +181,7 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
 				CM.RemoveServerByAddr(fmt.Sprintf("%s:%d", v.IP, v.Port))
 				t, err := NewTClient(fmt.Sprintf("%s:%d", v2.IP, v2.Port), pf, 60*time.Second)
 				if err != nil {
-					log.Debug("proxy client err", err)
+					log.Warn("proxy client err", err)
 				} else {
 					CM.AddTClient(fmt.Sprintf("%s:%d", v2.IP, v2.Port), t)
 				}
@@ -197,7 +197,7 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
 			log.Debug("-------------------add server", *v)
 			t, err := NewTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), pf, 60*time.Second)
 			if err != nil {
-				log.Debug("proxy client err", err)
+				log.Warn("proxy client err", err)
 			} else {
 				CM.AddTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), t)
 			}

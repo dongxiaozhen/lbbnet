@@ -78,7 +78,7 @@ func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, err
 	dst := t.Encoder(data)
 	err := p.t.Send(dst)
 	if err != nil {
-		log.Debug("send err", err)
+		log.Warn("send err", err)
 		return nil, err
 	}
 	pkg, err := ret.GetReply()
@@ -86,7 +86,7 @@ func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, err
 		p.Lock()
 		delete(p.mp, t.SeqId)
 		p.Unlock()
-		log.Debug("get reply", err)
+		log.Warn("get reply", err)
 		return nil, err
 	}
 	return pkg, nil
