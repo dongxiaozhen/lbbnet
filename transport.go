@@ -25,7 +25,7 @@ type TSocket struct {
 }
 
 func (c *TSocket) RemoteAddr() string {
-	return c.RemoteAddr()
+	return c.TCPConn.RemoteAddr().String()
 }
 func (c *TSocket) Read(b []byte) (int, error) {
 	t := time.Now().Add(c.timeout)

@@ -52,11 +52,9 @@ var user_id uint64
 var user_str string
 
 func main() {
-	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
-	flag.IntVar(&cfg.Port, "port", 9999, "server port")
 	flag.StringVar(&cfg.ServerId, "sid", "client_id_2", "server id")
 	flag.StringVar(&cfg.ServerName, "sname", "client_id", "server name")
-	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9629", "monitor addr")
+	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9429", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
 	flag.StringVar(&user_str, "ustr", "hahaha", "say hello")
