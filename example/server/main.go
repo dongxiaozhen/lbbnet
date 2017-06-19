@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/dongxiaozhen/lbbconsul"
 
 	"github.com/dongxiaozhen/lbbnet"
 )
@@ -39,19 +42,40 @@ func fb(data *lbbnet.NetPacket) {
 	data.Rw.WriteData(buf)
 }
 
+var cfg lbbconsul.ConsulConfig
+
 func main() {
+	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
+	flag.IntVar(&cfg.Port, "port", 9627, "server port")
+	flag.StringVar(&cfg.ServerId, "sid", "serverNode_2_1", "server id")
+	flag.StringVar(&cfg.ServerName, "sname", "serverNode_2", "server name")
+	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9727", "monitor addr")
+	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
+	flag.Parse()
+	cfg.MInterval = "5s"
+	cfg.MTimeOut = "2s"
+	cfg.DeregisterTime = "20s"
+	cfg.MMethod = "http"
 	closeChan := make(chan os.Signal, 1)
 	signal.Notify(closeChan, syscall.SIGTERM)
 
+	err := lbbconsul.GConsulClient.Open(&cfg)
+	if err != nil {
+		fmt.Println("GConsulClient,open err:", err)
+		return
+	}
+
 	hello := &Hello{}
 	hello.init()
-	s, err := lbbnet.NewTServer(":9099", hello, 2*time.Second)
+	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), hello, 60*time.Second)
 	if err != nil {
 		fmt.Println("create server err", err)
 		return
 	}
 
 	<-closeChan
+	//deregister
+	lbbconsul.GConsulClient.Close()
 	// close listern
 	s.Close()
 	// not hander new data, wait all done

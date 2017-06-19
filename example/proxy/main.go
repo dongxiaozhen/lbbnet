@@ -20,10 +20,10 @@ func main() {
 	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
 	flag.IntVar(&cfg.Port, "port", 2222, "server port")
 	flag.StringVar(&cfg.ServerId, "sid", "proxy_id_1", "server id")
-	flag.StringVar(&cfg.ServerName, "sname", "proxy_name", "server name")
+	flag.StringVar(&cfg.ServerName, "sname", "server_proxy", "server name")
 	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:2221", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
-	flag.StringVar(&foundServer, "fdsvr", "serverNode_1", "found server name")
+	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
@@ -31,6 +31,7 @@ func main() {
 	cfg.MMethod = "http"
 	exist := make(chan os.Signal, 1)
 	signal.Notify(exist, syscall.SIGTERM)
+	// SM = newServerManager()
 
 	err := lbbconsul.GConsulClient.Open(&cfg)
 	if err != nil {
@@ -39,7 +40,7 @@ func main() {
 	}
 
 	sproxy := &Sproxy{}
-	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 2*time.Second)
+	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 30*time.Second)
 	if err != nil {
 		fmt.Println("create server err", err)
 		return
@@ -63,8 +64,9 @@ func main() {
 			}
 			for k, v := range services {
 				if _, ok := oldSer[k]; !ok {
+					fmt.Println("make ", k, *v)
 					go func(s *lbbconsul.ServiceInfo) {
-						_, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", s.IP, s.Port), cproxy, 3*time.Second)
+						_, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", s.IP, s.Port), cproxy, 60*time.Second)
 						if err != nil {
 							fmt.Println("proxy client err", err)
 						}
@@ -119,7 +121,7 @@ func compareDiff(old, new map[string]*lbbconsul.ServiceInfo) (rem, update, add m
 	return
 }
 
-var SM *ServerManager
+var SM = newServerManager()
 
 type ServerManager struct {
 	seq     uint32
@@ -164,10 +166,12 @@ type Sproxy struct {
 }
 
 func (h *Sproxy) OnNetMade(t *lbbnet.Transport) {
+	fmt.Println("s made net")
 	SM.AddServer(t)
 }
 
 func (h *Sproxy) OnNetLost(t *lbbnet.Transport) {
+	fmt.Println("s lost net")
 	SM.RemoveServer(t)
 }
 
@@ -175,25 +179,41 @@ func (h *Sproxy) OnNetData(data *lbbnet.NetPacket) {
 	id := SM.GetService(data.Rw)
 	data.ServerId = uint32(id)
 
-	CM.GetClient(data.UserId).WriteData(data.Serialize())
+	client := CM.GetClient(data.UserId)
+	if client == nil {
+		fmt.Println("get client emtpy")
+		return
+	}
+	client.WriteData(data.Serialize())
 }
 
 var CM = &CManager{}
 
 type CManager struct {
 	clients []*lbbnet.Transport
+	sync.Mutex
 }
 
 func (c *CManager) GetClient(sharding uint64) *lbbnet.Transport {
+	c.Lock()
+	defer c.Unlock()
+	if len(c.clients) == 0 {
+		return nil
+	}
+	fmt.Println("len client", len(c.clients))
 	index := sharding % uint64(len(c.clients))
 	return c.clients[index]
 }
 
 func (c *CManager) AddClient(t *lbbnet.Transport) {
+	c.Lock()
+	defer c.Unlock()
 	c.clients = append(c.clients, t)
 }
 
 func (c *CManager) RemClient(t *lbbnet.Transport) {
+	c.Lock()
+	defer c.Unlock()
 	for index := range c.clients {
 		if c.clients[index] == t {
 			c.clients = append(c.clients[0:index], c.clients[index+1:]...)
@@ -205,10 +225,12 @@ type Cproxy struct {
 }
 
 func (h *Cproxy) OnNetMade(t *lbbnet.Transport) {
+	fmt.Println("c made net")
 	CM.AddClient(t)
 }
 
 func (h *Cproxy) OnNetLost(t *lbbnet.Transport) {
+	fmt.Println("c lost net")
 	CM.RemClient(t)
 }
 
