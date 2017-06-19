@@ -24,6 +24,9 @@ type TSocket struct {
 	timeout time.Duration
 }
 
+func (c *TSocket) RemoteAddr() string {
+	return c.RemoteAddr()
+}
 func (c *TSocket) Read(b []byte) (int, error) {
 	t := time.Now().Add(c.timeout)
 	c.SetReadDeadline(t)
@@ -45,6 +48,9 @@ func NewTransport(con *net.TCPConn, timeout time.Duration) *Transport {
 	return &Transport{con: &TSocket{con, timeout}, readChan: make(chan []byte, 10), writeChan: make(chan []byte, 10)}
 }
 
+func (c *Transport) RemoteAddr() string {
+	return c.con.RemoteAddr()
+}
 func (t *Transport) ReadData() *NetPacket {
 	s, ok := <-t.readChan
 	if !ok {

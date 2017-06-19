@@ -126,11 +126,26 @@ var SM = newServerManager()
 type ServerManager struct {
 	seq     uint32
 	clients map[*lbbnet.Transport]uint32
+	cs      map[string]*lbbnet.Transport
 	sync.Mutex
 }
 
 func newServerManager() *ServerManager {
-	return &ServerManager{seq: 0, clients: make(map[*lbbnet.Transport]uint32)}
+	return &ServerManager{
+		seq:     0,
+		clients: make(map[*lbbnet.Transport]uint32),
+		cs:      make(map[string]*lbbnet.Transport)}
+}
+
+func (s *ServerManager) RemoveServerByAddr(addr string) {
+	s.Lock()
+	defer s.Unlock()
+	t := s.cs[addr]
+	if t == nil {
+		return
+	}
+	delete(s.clients, t)
+	delete(s.cs, addr)
 }
 func (s *ServerManager) RemoveServer(t *lbbnet.Transport) {
 	s.Lock()
@@ -143,6 +158,7 @@ func (s *ServerManager) AddServer(conn *lbbnet.Transport) {
 	defer s.Unlock()
 	s.seq++
 	s.clients[conn] = s.seq
+	s.cs[conn.RemoteAddr()] = conn
 }
 
 func (s *ServerManager) GetService(t *lbbnet.Transport) uint32 {
