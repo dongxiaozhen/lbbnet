@@ -2,10 +2,11 @@ package lbbnet
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"sync"
 	"time"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type TClient struct {
@@ -47,12 +48,12 @@ func (p *TClient) Close() {
 func (p *TClient) connect() error {
 	conn, err := net.Dial("tcp", p.addr)
 	if err != nil {
-		fmt.Println("dial err")
+		log.Debug("dial err")
 		return err
 	}
 	con, ok := conn.(*net.TCPConn)
 	if !ok {
-		fmt.Println("conver err")
+		log.Debug("conver err")
 		return errors.New("conv err")
 	}
 
@@ -67,7 +68,7 @@ func (p *TClient) connect() error {
 
 func (p *TClient) handlerConnect() {
 	defer func() {
-		fmt.Println("reconnect")
+		log.Debug("reconnect")
 		p.run = false
 		p.recon()
 	}()
@@ -77,7 +78,7 @@ func (p *TClient) handlerConnect() {
 
 	defer p.pf.OnNetLost(p.transport)
 	defer func() {
-		fmt.Println("transport close")
+		log.Debug("transport close")
 		p.transport.Close()
 	}()
 
@@ -96,21 +97,21 @@ func (p *TClient) recon() {
 	for err != nil {
 		time.Sleep(5 * time.Second)
 		err = p.connect()
-		fmt.Println("recon,", err)
+		log.Debug("recon,", err)
 	}
 }
 
 func (p *TClient) handlerData() {
 	defer func() {
-		fmt.Println("tclient handlerData over")
+		log.Debug("tclient handlerData over")
 		time.Sleep(2 * time.Second)
 	}()
 
 	p.run = true
-	fmt.Println("tclient run true")
+	log.Debug("tclient run true")
 	for {
 		if s := p.transport.ReadData(); s == nil {
-			fmt.Println("client handlerData return")
+			log.Debug("client handlerData return")
 			return
 		} else {
 			p.pf.OnNetData(s)

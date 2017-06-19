@@ -3,7 +3,8 @@ package lbbnet
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 var LenOfNetPacket = 26
@@ -31,7 +32,7 @@ func (t *NetPacket) Decoder(data []byte) error {
 	t.SessionId = binary.LittleEndian.Uint32(data[16:20])
 	t.SeqId = binary.LittleEndian.Uint32(data[20:24])
 	t.ReqType = binary.LittleEndian.Uint16(data[24:26])
-	fmt.Printf("Decoder %d,%d,%d,%d,%d,%d\n", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
+	log.Debug("Decoder ", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
 	t.Data = data[LenOfNetPacket:]
 	return nil
 }
@@ -41,7 +42,7 @@ func (t *NetPacket) Encoder(data []byte) []byte {
 		return nil
 	}
 	buf := make([]byte, LenOfNetPacket+len(data))
-	fmt.Printf("encoder %d,%d,%d,%d,%d,%d\n", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
+	log.Debug("encoder ", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
 	binary.LittleEndian.PutUint64(buf[:8], t.UserId)
 	binary.LittleEndian.PutUint32(buf[8:12], t.ServerId)
 	binary.LittleEndian.PutUint32(buf[12:16], t.PacketType)
@@ -56,7 +57,7 @@ func (t *NetPacket) Serialize() []byte {
 		return nil
 	}
 	buf := make([]byte, LenOfNetPacket+len(t.Data))
-	fmt.Printf("encoder %d,%d,%d,%d,%d,%d\n", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
+	log.Debug("encoder ", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
 	binary.LittleEndian.PutUint64(buf[:8], t.UserId)
 	binary.LittleEndian.PutUint32(buf[8:12], t.ServerId)
 	binary.LittleEndian.PutUint32(buf[12:16], t.PacketType)

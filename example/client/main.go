@@ -11,6 +11,7 @@ import (
 	"github.com/dongxiaozhen/lbbconsul"
 
 	"github.com/dongxiaozhen/lbbnet"
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type Hello struct {
@@ -18,7 +19,7 @@ type Hello struct {
 }
 
 func (h *Hello) OnNetMade(t *lbbnet.Transport) {
-	fmt.Println("connect mad")
+	log.Debug("connect mad")
 	go func() {
 		for i := 0; i < 1000; i++ {
 			time.Sleep(1000 * time.Millisecond)
@@ -31,19 +32,18 @@ func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 
 func (h *Hello) OnNetData(data *lbbnet.NetPacket) {
 	if h.close {
-		fmt.Println("OnNetData close")
+		log.Debug("OnNetData close")
 		return
 	}
-	time.Sleep(1 * time.Second)
-	fmt.Println("recv", string(data.Data))
+	log.Warn("recv", string(data.Data))
 }
 func (h *Hello) OnNetLost(t *lbbnet.Transport) {
-	fmt.Println("connect lost")
+	log.Debug("connect lost")
 }
 
 func (h *Hello) Close() {
 	h.close = true
-	fmt.Println("hello close")
+	log.Debug("hello close")
 }
 
 var cfg lbbconsul.ConsulConfig
@@ -60,6 +60,8 @@ func main() {
 	flag.StringVar(&user_str, "ustr", "hahaha", "say hello")
 	flag.Uint64Var(&user_id, "user_id", 124, "user id")
 	flag.Parse()
+
+	log.SetLevel(log.WARN)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
@@ -69,25 +71,25 @@ func main() {
 
 	err := lbbconsul.GConsulClient.Open(&cfg)
 	if err != nil {
-		fmt.Println("open return", err)
+		log.Warn("open return", err)
 		return
 	}
 
 	err = lbbconsul.GConsulClient.DiscoverAliveService(foundServer)
 	if err != nil {
-		fmt.Println("discover server err", foundServer)
+		log.Warn("discover server err", foundServer)
 		return
 	}
 	services, ok := lbbconsul.GConsulClient.GetAllService(foundServer)
 	if !ok {
-		fmt.Println("not find server err", foundServer)
+		log.Warn("not find server err", foundServer)
 		return
 	}
 	hello := &Hello{}
 	for _, v := range services {
 		_, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), hello, 60*time.Second)
 		if err != nil {
-			fmt.Println(err)
+			log.Debug(err)
 			return
 		}
 	}

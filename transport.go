@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type Transport struct {
@@ -54,7 +55,7 @@ func (c *Transport) RemoteAddr() string {
 func (t *Transport) ReadData() *NetPacket {
 	s, ok := <-t.readChan
 	if !ok {
-		fmt.Println("t readData nil")
+		log.Debug("t readData nil")
 		return nil
 	}
 
@@ -63,7 +64,7 @@ func (t *Transport) ReadData() *NetPacket {
 	p := &NetPacket{Rw: t}
 	err := p.Decoder(s)
 	if err != nil {
-		fmt.Println("t  decoder nil")
+		log.Debug("t  decoder nil")
 		return nil
 	}
 	return p
@@ -84,15 +85,15 @@ func (t *Transport) Close() {
 func (t *Transport) WriteData(data []byte) error {
 	t.RLock()
 	defer t.RUnlock()
-	fmt.Println("----t writeData begin")
+	log.Debug("----t writeData begin")
 
 	if t.close {
-		fmt.Println("transport end", string(data))
+		log.Debug("transport end", string(data))
 		return ErrTransportClose
 	}
 
 	t.writeChan <- data
-	fmt.Println("----t writeData over")
+	log.Debug("----t writeData over")
 	return nil
 }
 
@@ -110,36 +111,36 @@ func (t *Transport) beginToRead() {
 		err     error
 	)
 	// buff size = 4k
-	fmt.Println("t begintoread")
+	log.Debug("t begintoread")
 	r := bufio.NewReader(t.con)
 	for {
 		// set deadline
 		// t.con.SetReadDeadline(30 * time.Second)
-		fmt.Println("--------t read begin")
+		log.Debug("--------t read begin")
 
 		err = binary.Read(r, binary.LittleEndian, &headLen)
 		if err != nil {
-			fmt.Println("--------t read head err", err)
+			log.Debug("--------t read head err", err)
 			return
 		}
 		buf := make([]byte, headLen)
 		index := 0
 		try := 0
 		for index < int(headLen) {
-			fmt.Println("--------t read full begin", index, headLen)
+			log.Debug("--------t read full begin", index, headLen)
 			n, err := io.ReadFull(r, buf[index:])
 			if err != nil {
 				e, ok := err.(net.Error)
 				if !ok || !e.Temporary() || try >= 3 {
-					fmt.Println("-->transport read err", err)
+					log.Debug("-->transport read err", err)
 					return
 				}
 				try++
 			}
 			index += n
-			fmt.Println("--------t read full", index, headLen)
+			log.Debug("--------t read full", index, headLen)
 		}
-		fmt.Println(" t read over")
+		log.Debug(" t read over")
 		t.readChan <- buf
 	}
 }
@@ -154,28 +155,28 @@ func (t *Transport) beginToWrite() {
 	)
 
 	for buf := range t.writeChan {
-		fmt.Println("write begin")
+		log.Debug("write begin")
 		if buf == nil {
-			fmt.Println("write nil return")
+			log.Debug("write nil return")
 			continue
 		}
 		headLen = uint64(len(buf))
 		err = binary.Write(t.con, binary.LittleEndian, headLen)
 		if err != nil {
-			fmt.Println("write head err", err)
+			log.Debug("write head err", err)
 			return
 		}
-		fmt.Println("write begin bogy")
+		log.Debug("write begin bogy")
 		n, err := t.con.Write(buf)
 		if err != nil || n != len(buf) {
-			fmt.Println("--->transport write err", err)
+			log.Debug("--->transport write err", err)
 			return
 		}
-		// fmt.Println("write begin flush")
+		// log.Debug("write begin flush")
 		// if err = w.Flush(); err != nil {
-		// fmt.Println("--->transport flush err", err)
+		// log.Debug("--->transport flush err", err)
 		// return
 		// }
-		fmt.Println("write end")
+		log.Debug("write end")
 	}
 }

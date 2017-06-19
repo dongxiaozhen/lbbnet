@@ -2,7 +2,8 @@ package lbbnet
 
 import (
 	"errors"
-	"fmt"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type NetProcess struct {
@@ -34,15 +35,15 @@ func (h *NetProcess) RegisterFunc(packType uint32, f func(*NetPacket)) error {
 }
 
 func (h *NetProcess) OnNetMade(t *Transport) {
-	fmt.Println("------------t made")
+	log.Debug("------------t made")
 }
 func (h *NetProcess) OnNetLost(t *Transport) {
-	fmt.Println("------------t lost")
+	log.Debug("------------t lost")
 }
 func (h *NetProcess) OnNetData(data *NetPacket) {
-	fmt.Println("------------data")
+	log.Debug("------------data")
 	if h.close {
-		fmt.Println("process close", *data)
+		log.Debug("process close", *data)
 		return
 	}
 

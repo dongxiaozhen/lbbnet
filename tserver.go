@@ -1,10 +1,11 @@
 package lbbnet
 
 import (
-	"fmt"
 	"net"
 	"sync"
 	"time"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type TServer struct {
@@ -28,12 +29,12 @@ func (p *TServer) Close() {
 func (p *TServer) listern() error {
 	ld, err := net.ResolveTCPAddr("tcp", p.addr)
 	if err != nil {
-		fmt.Println("%#v", err)
+		log.Debug("%#v", err)
 		return err
 	}
 	p.l, err = net.ListenTCP("tcp", ld)
 	if err != nil {
-		fmt.Println("%#v", err)
+		log.Debug("%#v", err)
 		return err
 	}
 	go p.accept()
@@ -44,7 +45,7 @@ func (p *TServer) accept() {
 	for {
 		con, err := p.l.AcceptTCP()
 		if err != nil {
-			fmt.Println("accept err %#v", err)
+			log.Debug("accept err %#v", err)
 			return
 		}
 		// con.SetReadBuffer(100)
@@ -65,10 +66,10 @@ func (p *TServer) handler(t *Transport) {
 	defer p.pf.OnNetLost(t)
 
 	for {
-		fmt.Println("ts readdata")
+		log.Debug("ts readdata")
 		s := t.ReadData()
 		if s == nil {
-			fmt.Println("ts readdata nil")
+			log.Debug("ts readdata nil")
 			return
 		}
 		p.pf.OnNetData(s)

@@ -1,9 +1,10 @@
 package lbbnet
 
 import (
-	"fmt"
 	"runtime"
 	"sync"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type WorkTask struct {
@@ -16,7 +17,7 @@ type WorkTask struct {
 }
 
 func NewWorkTask(plen, clen int) *WorkTask {
-	fmt.Println("NewWorkTask", plen, clen)
+	log.Debug("NewWorkTask", plen, clen)
 	return &WorkTask{pipeLen: uint64(plen), cacheLen: clen, process: make([]chan func(), plen)}
 }
 
@@ -61,6 +62,6 @@ func CapturePanic() {
 	if err := recover(); err != nil {
 		buf := make([]byte, 1<<20)
 		runtime.Stack(buf, true)
-		fmt.Println(buf)
+		log.Debug(buf)
 	}
 }

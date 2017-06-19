@@ -10,6 +10,7 @@ import (
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbnet"
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 var cfg lbbconsul.ConsulConfig
@@ -26,6 +27,7 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
+	log.SetLevel(log.WARN)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
@@ -36,13 +38,13 @@ func main() {
 
 	err := lbbconsul.GConsulClient.Open(&cfg)
 	if err != nil {
-		fmt.Println("open return", err)
+		log.Warn("open return", err)
 		return
 	}
 
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 30*time.Second)
 	if err != nil {
-		fmt.Println("create server err", err)
+		log.Warn("create server err", err)
 		return
 	}
 
@@ -53,21 +55,21 @@ func main() {
 		for range tick.C {
 			err := lbbconsul.GConsulClient.DiscoverAliveService(foundServer)
 			if err != nil {
-				fmt.Println("discover server err", foundServer)
+				log.Warn("discover server err", foundServer)
 				continue
 			}
 			services, ok := lbbconsul.GConsulClient.GetAllService(foundServer)
 			if !ok {
-				fmt.Println("not find server err", foundServer)
+				log.Warn("not find server err", foundServer)
 				continue
 			}
 			// for k, v := range services {
 			// if _, ok := oldSer[k]; !ok {
-			// fmt.Println("make ", k, *v)
+			// log.Debug("make ", k, *v)
 			// go func(s *lbbconsul.ServiceInfo) {
 			// _, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", s.IP, s.Port), cproxy, 60*time.Second)
 			// if err != nil {
-			// fmt.Println("proxy client err", err)
+			// log.Debug("proxy client err", err)
 			// }
 			// }(v)
 			// }

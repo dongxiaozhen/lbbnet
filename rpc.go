@@ -2,9 +2,10 @@ package lbbnet
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
+
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 var ErrRpcTimeOut = errors.New("rpc 请求超时")
@@ -46,13 +47,13 @@ func (p *Rpc) Open(addr string, timeout time.Duration) error {
 }
 
 func (p *Rpc) OnNetMade(t *Transport) {
-	fmt.Println("---------made")
+	log.Debug("---------made")
 }
 func (p *Rpc) OnNetLost(t *Transport) {
-	fmt.Println("---------lost")
+	log.Debug("---------lost")
 }
 func (p *Rpc) OnNetData(t *NetPacket) {
-	fmt.Println("---------data")
+	log.Debug("---------data")
 	p.Lock()
 	defer p.Unlock()
 
@@ -62,7 +63,7 @@ func (p *Rpc) OnNetData(t *NetPacket) {
 		delete(p.mp, t.SeqId)
 		return
 	}
-	fmt.Println("not find seqid", t.SeqId)
+	log.Debug("not find seqid", t.SeqId)
 }
 
 func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, error) {
@@ -77,7 +78,7 @@ func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, err
 	dst := t.Encoder(data)
 	err := p.t.Send(dst)
 	if err != nil {
-		fmt.Println("send err", err)
+		log.Debug("send err", err)
 		return nil, err
 	}
 	pkg, err := ret.GetReply()
@@ -85,7 +86,7 @@ func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, err
 		p.Lock()
 		delete(p.mp, t.SeqId)
 		p.Unlock()
-		fmt.Println("get reply", err)
+		log.Debug("get reply", err)
 		return nil, err
 	}
 	return pkg, nil

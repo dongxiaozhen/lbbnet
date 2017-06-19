@@ -11,6 +11,7 @@ import (
 	"github.com/dongxiaozhen/lbbconsul"
 
 	"github.com/dongxiaozhen/lbbnet"
+	log "github.com/donnie4w/go-logger/logger"
 )
 
 type Hello struct {
@@ -24,20 +25,20 @@ func (h *Hello) init() {
 }
 
 func fa(data *lbbnet.NetPacket) {
-	fmt.Println("fa start")
+	log.Debug("fa start")
 	time.Sleep(1 * time.Second)
 	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
-	fmt.Println(tmp)
+	log.Debug(tmp)
 	buf := data.Encoder([]byte(tmp))
 	data.Rw.WriteData(buf)
 }
 func fb(data *lbbnet.NetPacket) {
-	fmt.Println("fb start")
+	log.Debug("fb start")
 	time.Sleep(1 * time.Second)
 	suf := fmt.Sprintf("2 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
-	fmt.Println(tmp)
+	log.Debug(tmp)
 	buf := data.Encoder([]byte(tmp))
 	data.Rw.WriteData(buf)
 }
@@ -52,6 +53,8 @@ func main() {
 	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9727", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.Parse()
+
+	log.SetLevel(log.WARN)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
@@ -61,7 +64,7 @@ func main() {
 
 	err := lbbconsul.GConsulClient.Open(&cfg)
 	if err != nil {
-		fmt.Println("GConsulClient,open err:", err)
+		log.Warn("GConsulClient,open err:", err)
 		return
 	}
 
@@ -69,7 +72,7 @@ func main() {
 	hello.init()
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), hello, 60*time.Second)
 	if err != nil {
-		fmt.Println("create server err", err)
+		log.Warn("create server err", err)
 		return
 	}
 
