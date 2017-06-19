@@ -72,7 +72,7 @@ func main() {
 			// }(v)
 			// }
 			// }
-			lbbconsul.CompareDiff(oldSer, services, cproxy)
+			lbbnet.CompareDiff(oldSer, services, cproxy)
 			oldSer = services
 		}
 	}()

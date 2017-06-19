@@ -3,6 +3,9 @@ package lbbnet
 import (
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/dongxiaozhen/lbbconsul"
 )
 
 var SM = NewServerManager()
@@ -166,4 +169,37 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 		return
 	}
 	s.WriteData(data.Serialize())
+}
+
+func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
+	for k, v := range old {
+		if v2, ok := new[k]; ok {
+			if v2.IP == v.IP && v2.Port == v.Port {
+			} else {
+				fmt.Println("-------------------remvoe server", *v)
+				CM.RemoveServerByAddr(fmt.Sprintf("%s:%d", v.IP, v.Port))
+				t, err := NewTClient(fmt.Sprintf("%s:%d", v2.IP, v2.Port), pf, 60*time.Second)
+				if err != nil {
+					fmt.Println("proxy client err", err)
+				} else {
+					CM.AddTClient(fmt.Sprintf("%s:%d", v2.IP, v2.Port), t)
+				}
+			}
+		} else {
+			fmt.Println("-------------------remove server", *v)
+			CM.RemoveServerByAddr(fmt.Sprintf("%s:%d", v.IP, v.Port))
+		}
+	}
+
+	for k, v := range new {
+		if _, ok := old[k]; !ok {
+			fmt.Println("-------------------add server", *v)
+			t, err := NewTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), pf, 60*time.Second)
+			if err != nil {
+				fmt.Println("proxy client err", err)
+			} else {
+				CM.AddTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), t)
+			}
+		}
+	}
 }
