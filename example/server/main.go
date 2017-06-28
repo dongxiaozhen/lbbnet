@@ -11,6 +11,7 @@ import (
 	"github.com/dongxiaozhen/lbbconsul"
 
 	"github.com/dongxiaozhen/lbbnet"
+	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
@@ -25,8 +26,8 @@ func (h *Hello) init() {
 }
 
 func fa(data *lbbnet.NetPacket) {
+	defer goref.Ref("fa").Deref()
 	log.Debug("fa start")
-	time.Sleep(1 * time.Second)
 	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
@@ -34,8 +35,8 @@ func fa(data *lbbnet.NetPacket) {
 	data.Rw.WriteData(buf)
 }
 func fb(data *lbbnet.NetPacket) {
+	defer goref.Ref("fb").Deref()
 	log.Debug("fb start")
-	time.Sleep(1 * time.Second)
 	suf := fmt.Sprintf("2 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)

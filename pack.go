@@ -11,10 +11,10 @@ var LenOfNetPacket = 26
 
 type NetPacket struct {
 	UserId     uint64 // 用户ID
-	ServerId   uint32 // 发送者ID
+	ServerId   uint32 // proxy使,用发送者ID
 	PacketType uint32 // 请求类型
 	SessionId  uint32 // 会话ID
-	SeqId      uint32 // 顺序ID sequence
+	SeqId      uint32 // rpc使用,顺序ID
 	ReqType    uint16 // 请求分类 request,response
 	Data       []byte // 请求数据
 	Rw         *Transport

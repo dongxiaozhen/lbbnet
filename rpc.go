@@ -5,8 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alex023/clock"
 	log "github.com/donnie4w/go-logger/logger"
 )
+
+// 统一管理定时时间
+var gclock = clock.NewClock()
 
 var ErrRpcTimeOut = errors.New("rpc 请求超时")
 
@@ -15,9 +19,16 @@ type RpcRet struct {
 }
 
 func (p *RpcRet) GetReply() (r *NetPacket, err error) {
+	c := make(chan bool, 1)
+	job, _ := gclock.AddJobWithInterval(3*time.Second, func() {
+		c <- true
+	})
+
 	select {
 	case r = <-p.c:
-	case <-time.After(3 * time.Second):
+		gclock.DelJob(job)
+		close(c)
+	case <-c:
 		err = ErrRpcTimeOut
 	}
 	return
