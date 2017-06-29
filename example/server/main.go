@@ -31,8 +31,8 @@ func fa(data *lbbnet.NetPacket) {
 	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
-	buf := data.Encoder([]byte(tmp))
-	data.Rw.WriteData(buf)
+	data.Data = []byte(tmp)
+	data.Rw.WriteData(data)
 }
 func fb(data *lbbnet.NetPacket) {
 	defer goref.Ref("fb").Deref()
@@ -40,8 +40,8 @@ func fb(data *lbbnet.NetPacket) {
 	suf := fmt.Sprintf("2 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
-	buf := data.Encoder([]byte(tmp))
-	data.Rw.WriteData(buf)
+	data.Data = []byte(tmp)
+	data.Rw.WriteData(data)
 }
 
 var cfg lbbconsul.ConsulConfig

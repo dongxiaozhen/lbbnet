@@ -23,9 +23,8 @@ func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 	go func() {
 		for i := 0; i < 1000; i++ {
 			time.Sleep(1000 * time.Millisecond)
-			p := &lbbnet.NetPacket{UserId: user_id, SessionId: uint32(i), PacketType: uint32(1 + i%2)}
-			data := p.Encoder([]byte(fmt.Sprintf("%s:%d", user_str, i)))
-			t.WriteData(data)
+			p := &lbbnet.NetPacket{UserId: user_id, SessionId: uint32(i), PacketType: uint32(1 + i%2), Data: []byte(fmt.Sprintf("%s:%d", user_str, i))}
+			t.WriteData(p)
 		}
 	}()
 }

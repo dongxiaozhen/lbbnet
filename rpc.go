@@ -83,11 +83,12 @@ func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, err
 	p.Lock()
 	p.seq++
 	p.mp[p.seq] = ret
-	t := &NetPacket{UserId: userId, PacketType: packType, SeqId: p.seq}
 	p.Unlock()
 
-	dst := t.Encoder(data)
-	err := p.t.Send(dst)
+	log.Debug("--------1---data", string(data))
+	t := &NetPacket{UserId: userId, PacketType: packType, SeqId: p.seq, Data: data}
+	log.Debug("--------1---data", string(data), *t, string(t.Data))
+	err := p.t.Send(t)
 	if err != nil {
 		log.Warn("send err", err)
 		return nil, err

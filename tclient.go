@@ -29,7 +29,7 @@ func NewTClient(addr string, pf Protocol, timeout time.Duration) (*TClient, erro
 	return t, nil
 }
 
-func (p *TClient) Send(data []byte) error {
+func (p *TClient) Send(data *NetPacket) error {
 	if !p.run {
 		return errors.New("tclient close")
 	}

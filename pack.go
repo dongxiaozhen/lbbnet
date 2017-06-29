@@ -8,6 +8,7 @@ import (
 )
 
 var LenOfNetPacket = 26
+var LenOfPacket = 26 + 4
 
 type NetPacket struct {
 	UserId     uint64 // 用户ID
@@ -56,14 +57,17 @@ func (t *NetPacket) Serialize() []byte {
 	if t == nil {
 		return nil
 	}
-	buf := make([]byte, LenOfNetPacket+len(t.Data))
-	log.Debug("encoder ", t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
-	binary.LittleEndian.PutUint64(buf[:8], t.UserId)
-	binary.LittleEndian.PutUint32(buf[8:12], t.ServerId)
-	binary.LittleEndian.PutUint32(buf[12:16], t.PacketType)
-	binary.LittleEndian.PutUint32(buf[16:20], t.SessionId)
-	binary.LittleEndian.PutUint32(buf[20:24], t.SeqId)
-	binary.LittleEndian.PutUint16(buf[24:26], t.ReqType)
-	copy(buf[LenOfNetPacket:], t.Data)
+	log.Debug("-------2---------data", *t)
+	l := LenOfPacket + len(t.Data)
+	buf := make([]byte, l)
+	log.Debug("encoder ", l, t.UserId, t.ServerId, t.SessionId, t.PacketType, t.SeqId, t.ReqType)
+	binary.LittleEndian.PutUint32(buf[:4], uint32(LenOfNetPacket+len(t.Data)))
+	binary.LittleEndian.PutUint64(buf[4:12], t.UserId)
+	binary.LittleEndian.PutUint32(buf[12:16], t.ServerId)
+	binary.LittleEndian.PutUint32(buf[16:20], t.PacketType)
+	binary.LittleEndian.PutUint32(buf[20:24], t.SessionId)
+	binary.LittleEndian.PutUint32(buf[24:28], t.SeqId)
+	binary.LittleEndian.PutUint16(buf[28:30], t.ReqType)
+	copy(buf[LenOfPacket:], t.Data)
 	return buf
 }

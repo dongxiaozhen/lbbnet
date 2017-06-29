@@ -12,6 +12,8 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
+var MaxSendPackets = 100
+
 type Transport struct {
 	con       *TSocket
 	readChan  chan []byte
@@ -28,18 +30,26 @@ type TSocket struct {
 func (c *TSocket) RemoteAddr() string {
 	return c.TCPConn.RemoteAddr().String()
 }
-func (c *TSocket) Read(b []byte) (int, error) {
-	t := time.Now().Add(c.timeout)
-	c.SetReadDeadline(t)
-	n, err := c.TCPConn.Read(b)
-	c.SetReadDeadline(time.Time{})
+func (c *TSocket) Read(b []byte) (n int, err error) {
+	if c.timeout > time.Nanosecond {
+		t := time.Now().Add(c.timeout)
+		c.SetReadDeadline(t)
+		n, err = c.TCPConn.Read(b)
+		c.SetReadDeadline(time.Time{})
+	} else {
+		n, err = c.TCPConn.Read(b)
+	}
 	return n, err
 }
-func (c *TSocket) Write(b []byte) (int, error) {
-	t := time.Now().Add(c.timeout)
-	c.SetWriteDeadline(t)
-	n, err := c.TCPConn.Write(b)
-	c.SetWriteDeadline(time.Time{})
+func (c *TSocket) Write(b []byte) (n int, err error) {
+	if c.timeout > time.Nanosecond {
+		t := time.Now().Add(c.timeout)
+		c.SetWriteDeadline(t)
+		n, err = c.TCPConn.Write(b)
+		c.SetWriteDeadline(time.Time{})
+	} else {
+		n, err = c.TCPConn.Write(b)
+	}
 	return n, err
 }
 
@@ -82,17 +92,22 @@ func (t *Transport) Close() {
 	close(t.writeChan)
 }
 
-func (t *Transport) WriteData(data []byte) error {
+var ErrEmptyPacket = errors.New("empty packet")
+
+func (t *Transport) WriteData(data *NetPacket) error {
 	t.RLock()
 	defer t.RUnlock()
 	log.Debug("----t writeData begin")
 
 	if t.close {
-		log.Warn("transport end", string(data))
+		log.Warn("send err,transport close")
 		return ErrTransportClose
 	}
+	if data == nil {
+		return ErrEmptyPacket
+	}
 
-	t.writeChan <- data
+	t.writeChan <- data.Serialize()
 	log.Debug("----t writeData over")
 	return nil
 }
@@ -107,7 +122,7 @@ func (t *Transport) beginToRead() {
 		close(t.readChan)
 	}()
 	var (
-		headLen uint64
+		headLen uint32
 		err     error
 	)
 	// buff size = 4k
@@ -146,8 +161,8 @@ func (t *Transport) beginToWrite() {
 		t.Close()
 	}()
 	var (
-		headLen uint64
-		err     error
+		err error
+		n   int
 	)
 
 	for buf := range t.writeChan {
@@ -155,13 +170,7 @@ func (t *Transport) beginToWrite() {
 			log.Warn("write nil return")
 			continue
 		}
-		headLen = uint64(len(buf))
-		err = binary.Write(t.con, binary.LittleEndian, headLen)
-		if err != nil {
-			log.Warn("write head err", err)
-			return
-		}
-		n, err := t.con.Write(buf)
+		n, err = t.con.Write(buf)
 		if err != nil || n != len(buf) {
 			log.Warn("--->transport write err", err)
 			return

@@ -42,7 +42,7 @@ func main() {
 		return
 	}
 
-	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 30*time.Second)
+	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 0)
 	if err != nil {
 		log.Warn("create server err", err)
 		return

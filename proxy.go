@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dongxiaozhen/lbbconsul"
+	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
@@ -130,12 +131,12 @@ type Sproxy struct {
 }
 
 func (h *Sproxy) OnNetMade(t *Transport) {
-	log.Debug("s made net")
+	log.Debug("-------------s made net")
 	SM.AddServer(t)
 }
 
 func (h *Sproxy) OnNetLost(t *Transport) {
-	log.Debug("s lost net")
+	log.Debug("-------------s lost net")
 	SM.RemoveServer(t)
 }
 
@@ -143,12 +144,14 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 	id := SM.GetService(data.Rw)
 	data.ServerId = uint32(id)
 
+	defer goref.Ref("proxy").Deref()
+
 	client := CM.GetClient(data.UserId)
 	if client == nil {
 		log.Debug("get client emtpy")
 		return
 	}
-	client.WriteData(data.Serialize())
+	client.WriteData(data)
 }
 
 type Cproxy struct {
@@ -169,7 +172,7 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 	if s == nil {
 		return
 	}
-	s.WriteData(data.Serialize())
+	s.WriteData(data)
 }
 
 func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
