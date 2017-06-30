@@ -42,7 +42,6 @@ func (p *TClient) Close() {
 	p.mu.Unlock()
 
 	p.transport.Close()
-	p.wg.Wait()
 }
 
 func (p *TClient) connect() error {
@@ -73,9 +72,6 @@ func (p *TClient) handlerConnect() {
 		p.recon()
 	}()
 
-	p.wg.Add(1)
-	defer p.wg.Done()
-
 	defer p.pf.OnNetLost(p.transport)
 	defer func() {
 		log.Debug("transport close")
@@ -104,7 +100,6 @@ func (p *TClient) recon() {
 func (p *TClient) handlerData() {
 	defer func() {
 		log.Debug("tclient handlerData over")
-		time.Sleep(2 * time.Second)
 	}()
 
 	p.run = true

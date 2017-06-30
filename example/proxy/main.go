@@ -61,7 +61,6 @@ func main() {
 			services, ok := lbbconsul.GConsulClient.GetAllService(foundServer)
 			if !ok {
 				log.Warn("not find server err", foundServer)
-				continue
 			}
 			// for k, v := range services {
 			// if _, ok := oldSer[k]; !ok {

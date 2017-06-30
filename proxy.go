@@ -91,14 +91,19 @@ func (c *CManager) AddTClient(addr string, t *TClient) {
 }
 
 func (c *CManager) RemClient(t *Transport) {
-	log.Debug("---------lbbnet------remove client")
 	c.Lock()
 	defer c.Unlock()
-	for index := range c.clients {
-		if c.clients[index] == t {
-			c.clients = append(c.clients[0:index], c.clients[index+1:]...)
+	index := -1
+	for i := range c.clients {
+		if c.clients[i] == t {
+			index = i
+			break
 		}
 	}
+	if index != -1 {
+		c.clients = append(c.clients[:index], c.clients[index+1:]...)
+	}
+
 	addr := t.RemoteAddr()
 	tclient := c.cs[addr]
 	if tclient == nil {
@@ -115,14 +120,18 @@ func (c *CManager) RemoveServerByAddr(addr string) {
 	defer c.Unlock()
 	t := c.cs[addr]
 	if t == nil {
-		log.Warn("-------consul--------remove client empty")
 		return
 	}
 	delete(c.cs, addr)
+	i := -1
 	for index := range c.clients {
 		if c.clients[index].RemoteAddr() == addr {
-			c.clients = append(c.clients[0:index], c.clients[index+1:]...)
+			i = index
+			break
 		}
+	}
+	if i != -1 {
+		c.clients = append(c.clients[:i], c.clients[i+1:]...)
 	}
 	t.Close()
 }
