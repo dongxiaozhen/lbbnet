@@ -45,6 +45,7 @@ func (p *TClient) Close() {
 }
 
 func (p *TClient) connect() error {
+	log.Warn("tclient  connect--->", p.addr)
 	conn, err := net.Dial("tcp", p.addr)
 	if err != nil {
 		log.Warn("dial err")

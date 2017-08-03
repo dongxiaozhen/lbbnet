@@ -27,7 +27,8 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
-	log.SetLevel(log.WARN)
+	// log.SetLevel(log.WARN)
+	log.SetLevel(log.ALL)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
@@ -62,17 +63,6 @@ func main() {
 			if !ok {
 				log.Warn("not find server err", foundServer)
 			}
-			// for k, v := range services {
-			// if _, ok := oldSer[k]; !ok {
-			// log.Debug("make ", k, *v)
-			// go func(s *lbbconsul.ServiceInfo) {
-			// _, err := lbbnet.NewTClient(fmt.Sprintf("%s:%d", s.IP, s.Port), cproxy, 60*time.Second)
-			// if err != nil {
-			// log.Debug("proxy client err", err)
-			// }
-			// }(v)
-			// }
-			// }
 			lbbnet.CompareDiff(oldSer, services, cproxy)
 			oldSer = services
 		}

@@ -27,7 +27,6 @@ func (h *Hello) init() {
 
 func fa(data *lbbnet.NetPacket) {
 	defer goref.Ref("fa").Deref()
-	log.Debug("fa start")
 	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)

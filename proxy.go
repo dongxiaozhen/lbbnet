@@ -67,30 +67,41 @@ func NewCManager() *CManager {
 	return &CManager{cs: make(map[string]*TClient)}
 }
 
+func (c *CManager) HasClient(addr string) bool {
+	c.Lock()
+	defer c.Unlock()
+	_, ok := c.cs[addr]
+	return ok
+}
+
 func (c *CManager) GetClient(sharding uint64) *Transport {
 	c.Lock()
 	defer c.Unlock()
 	if len(c.clients) == 0 {
 		return nil
 	}
-	log.Debug("len client", len(c.clients))
 	index := sharding % uint64(len(c.clients))
+	log.Debug("user= ", sharding, "proxy-> ", c.clients[index].RemoteAddr(), "now client_len=", len(c.clients))
 	return c.clients[index]
 }
 
 func (c *CManager) AddClient(t *Transport) {
+	log.Warn("CM---------Add", t.RemoteAddr())
 	c.Lock()
 	defer c.Unlock()
 	c.clients = append(c.clients, t)
 }
 
 func (c *CManager) AddTClient(addr string, t *TClient) {
+	log.Warn("CM---------AddT", addr)
 	c.Lock()
 	defer c.Unlock()
 	c.cs[addr] = t
 }
 
+// 被动关闭一个后端服务
 func (c *CManager) RemClient(t *Transport) {
+	log.Warn("CM---------服务断开连接", t.RemoteAddr())
 	c.Lock()
 	defer c.Unlock()
 	index := -1
@@ -114,8 +125,26 @@ func (c *CManager) RemClient(t *Transport) {
 	delete(c.cs, addr)
 }
 
+//主动关闭一个后端服务--暂时
+func (c *CManager) TmpRemoveServerByAddr(addr string) {
+	log.Warn("---------暂停服务", addr)
+	c.Lock()
+	defer c.Unlock()
+	i := -1
+	for index := range c.clients {
+		if c.clients[index].RemoteAddr() == addr {
+			i = index
+			break
+		}
+	}
+	if i != -1 {
+		c.clients = append(c.clients[:i], c.clients[i+1:]...)
+	}
+}
+
+// 主动关闭一个后端服务
 func (c *CManager) RemoveServerByAddr(addr string) {
-	log.Debug("---------consul------remove client", addr)
+	log.Warn("---------代理主动关闭连接", addr)
 	c.Lock()
 	defer c.Unlock()
 	t := c.cs[addr]
@@ -157,7 +186,7 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 
 	client := CM.GetClient(data.UserId)
 	if client == nil {
-		log.Debug("get client emtpy")
+		log.Warn("get client emtpy")
 		return
 	}
 	client.WriteData(data)
@@ -167,12 +196,12 @@ type Cproxy struct {
 }
 
 func (h *Cproxy) OnNetMade(t *Transport) {
-	log.Debug("c made net")
+	log.Warn("c made net", t.RemoteAddr())
 	CM.AddClient(t)
 }
 
 func (h *Cproxy) OnNetLost(t *Transport) {
-	log.Debug("c lost net")
+	log.Warn("c lost net", t.RemoteAddr())
 	CM.RemClient(t)
 }
 
@@ -186,32 +215,33 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 
 func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
 	for k, v := range old {
+		addr := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		if v2, ok := new[k]; ok {
-			if v2.IP == v.IP && v2.Port == v.Port {
-			} else {
+			if v2.IP != v.IP || v2.Port != v.Port || (v2.IP == v.IP && v2.Port == v.Port && !CM.HasClient(addr)) {
 				log.Debug("-------------------remvoe server", *v)
-				CM.RemoveServerByAddr(fmt.Sprintf("%s:%d", v.IP, v.Port))
-				t, err := NewTClient(fmt.Sprintf("%s:%d", v2.IP, v2.Port), pf, 60*time.Second)
+				CM.RemoveServerByAddr(addr)
+				t, err := NewTClient(addr, pf, 0)
 				if err != nil {
 					log.Warn("proxy client err", err)
 				} else {
-					CM.AddTClient(fmt.Sprintf("%s:%d", v2.IP, v2.Port), t)
+					CM.AddTClient(addr, t)
 				}
 			}
 		} else {
 			log.Debug("-------------------remove server", *v)
-			CM.RemoveServerByAddr(fmt.Sprintf("%s:%d", v.IP, v.Port))
+			CM.TmpRemoveServerByAddr(addr)
 		}
 	}
 
 	for k, v := range new {
+		addr := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		if _, ok := old[k]; !ok {
 			log.Debug("-------------------add server", *v)
-			t, err := NewTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), pf, 60*time.Second)
+			t, err := NewTClient(addr, pf, 60*time.Second)
 			if err != nil {
 				log.Warn("proxy client err", err)
 			} else {
-				CM.AddTClient(fmt.Sprintf("%s:%d", v.IP, v.Port), t)
+				CM.AddTClient(addr, t)
 			}
 		}
 	}
