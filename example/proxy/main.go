@@ -15,8 +15,8 @@ import (
 
 var cfg lbbconsul.ConsulConfig
 var foundServer string
-var cproxy = &lbbnet.Cproxy{}
 var sproxy = &lbbnet.Sproxy{}
+var cproxy = &lbbnet.Cproxy{}
 
 func main() {
 	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
@@ -43,7 +43,7 @@ func main() {
 		return
 	}
 
-	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), sproxy, 0)
+	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), cproxy, 0)
 	if err != nil {
 		log.Warn("create server err", err)
 		return
@@ -63,7 +63,7 @@ func main() {
 			if !ok {
 				log.Warn("not find server err", foundServer)
 			}
-			lbbnet.CompareDiff(oldSer, services, cproxy)
+			lbbnet.CompareDiff(oldSer, services, sproxy)
 			oldSer = services
 		}
 	}()

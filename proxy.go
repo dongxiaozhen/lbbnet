@@ -10,43 +10,43 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
+var CM = NewClientManager()
 var SM = NewServerManager()
-var CM = NewCManager()
 
-type ServerManager struct {
+type ClientManager struct {
 	seq     uint32
 	clients map[*Transport]uint32
 	sync.Mutex
 }
 
-func NewServerManager() *ServerManager {
-	return &ServerManager{
+func NewClientManager() *ClientManager {
+	return &ClientManager{
 		seq:     0,
 		clients: make(map[*Transport]uint32),
 	}
 }
 
-func (s *ServerManager) RemoveServer(t *Transport) {
+func (s *ClientManager) RemoveClient(t *Transport) {
 	s.Lock()
 	defer s.Unlock()
 	t.Close()
 	delete(s.clients, t)
 }
 
-func (s *ServerManager) AddServer(conn *Transport) {
+func (s *ClientManager) AddClient(conn *Transport) {
 	s.Lock()
 	defer s.Unlock()
 	s.seq++
 	s.clients[conn] = s.seq
 }
 
-func (s *ServerManager) GetService(t *Transport) uint32 {
+func (s *ClientManager) GetClient(t *Transport) uint32 {
 	s.Lock()
 	defer s.Unlock()
 	return s.clients[t]
 }
 
-func (s *ServerManager) GetServiceById(sid uint32) *Transport {
+func (s *ClientManager) GetClientById(sid uint32) *Transport {
 	s.Lock()
 	defer s.Unlock()
 	for t, id := range s.clients {
@@ -57,24 +57,24 @@ func (s *ServerManager) GetServiceById(sid uint32) *Transport {
 	return nil
 }
 
-type CManager struct {
+type ServerManager struct {
 	clients []*Transport
 	cs      map[string]*TClient
 	sync.Mutex
 }
 
-func NewCManager() *CManager {
-	return &CManager{cs: make(map[string]*TClient)}
+func NewServerManager() *ServerManager {
+	return &ServerManager{cs: make(map[string]*TClient)}
 }
 
-func (c *CManager) HasClient(addr string) bool {
+func (c *ServerManager) HasServer(addr string) bool {
 	c.Lock()
 	defer c.Unlock()
 	_, ok := c.cs[addr]
 	return ok
 }
 
-func (c *CManager) GetClient(sharding uint64) *Transport {
+func (c *ServerManager) GetServer(sharding uint64) *Transport {
 	c.Lock()
 	defer c.Unlock()
 	if len(c.clients) == 0 {
@@ -85,23 +85,23 @@ func (c *CManager) GetClient(sharding uint64) *Transport {
 	return c.clients[index]
 }
 
-func (c *CManager) AddClient(t *Transport) {
-	log.Warn("CM---------Add", t.RemoteAddr())
+func (c *ServerManager) AddServer(t *Transport) {
+	log.Warn("SM---------Add", t.RemoteAddr())
 	c.Lock()
 	defer c.Unlock()
 	c.clients = append(c.clients, t)
 }
 
-func (c *CManager) AddTClient(addr string, t *TClient) {
-	log.Warn("CM---------AddT", addr)
+func (c *ServerManager) AddTServer(addr string, t *TClient) {
+	log.Warn("SM---------AddT", addr)
 	c.Lock()
 	defer c.Unlock()
 	c.cs[addr] = t
 }
 
 // 被动关闭一个后端服务
-func (c *CManager) RemClient(t *Transport) {
-	log.Warn("CM---------服务断开连接", t.RemoteAddr())
+func (c *ServerManager) RemServer(t *Transport) {
+	log.Warn("SM---------服务断开连接", t.RemoteAddr())
 	c.Lock()
 	defer c.Unlock()
 	index := -1
@@ -126,8 +126,8 @@ func (c *CManager) RemClient(t *Transport) {
 }
 
 //主动关闭一个后端服务--暂时
-func (c *CManager) TmpRemoveServerByAddr(addr string) {
-	log.Warn("---------暂停服务", addr)
+func (c *ServerManager) TmpRemoveServerByAddr(addr string) {
+	log.Warn("SM---------暂停服务", addr)
 	c.Lock()
 	defer c.Unlock()
 	i := -1
@@ -143,8 +143,8 @@ func (c *CManager) TmpRemoveServerByAddr(addr string) {
 }
 
 // 主动关闭一个后端服务
-func (c *CManager) RemoveServerByAddr(addr string) {
-	log.Warn("---------代理主动关闭连接", addr)
+func (c *ServerManager) RemoveServerByAddr(addr string) {
+	log.Warn("SM---------代理主动关闭连接", addr)
 	c.Lock()
 	defer c.Unlock()
 	t := c.cs[addr]
@@ -165,26 +165,26 @@ func (c *CManager) RemoveServerByAddr(addr string) {
 	t.Close()
 }
 
-type Sproxy struct {
+type Cproxy struct {
 }
 
-func (h *Sproxy) OnNetMade(t *Transport) {
-	log.Debug("-------------s made net")
-	SM.AddServer(t)
+func (h *Cproxy) OnNetMade(t *Transport) {
+	log.Debug("CP-------------s made net")
+	CM.AddClient(t)
 }
 
-func (h *Sproxy) OnNetLost(t *Transport) {
-	log.Debug("-------------s lost net")
-	SM.RemoveServer(t)
+func (h *Cproxy) OnNetLost(t *Transport) {
+	log.Debug("CP-------------s lost net")
+	CM.RemoveClient(t)
 }
 
-func (h *Sproxy) OnNetData(data *NetPacket) {
-	id := SM.GetService(data.Rw)
+func (h *Cproxy) OnNetData(data *NetPacket) {
+	id := CM.GetClient(data.Rw)
 	data.ServerId = uint32(id)
 
 	defer goref.Ref("proxy").Deref()
 
-	client := CM.GetClient(data.UserId)
+	client := SM.GetServer(data.UserId)
 	if client == nil {
 		log.Warn("get client emtpy")
 		return
@@ -192,21 +192,21 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 	client.WriteData(data)
 }
 
-type Cproxy struct {
+type Sproxy struct {
 }
 
-func (h *Cproxy) OnNetMade(t *Transport) {
-	log.Warn("c made net", t.RemoteAddr())
-	CM.AddClient(t)
+func (h *Sproxy) OnNetMade(t *Transport) {
+	log.Warn("SP--------->made", t.RemoteAddr())
+	SM.AddServer(t)
 }
 
-func (h *Cproxy) OnNetLost(t *Transport) {
-	log.Warn("c lost net", t.RemoteAddr())
-	CM.RemClient(t)
+func (h *Sproxy) OnNetLost(t *Transport) {
+	log.Warn("SP--------->lost", t.RemoteAddr())
+	SM.RemServer(t)
 }
 
-func (h *Cproxy) OnNetData(data *NetPacket) {
-	s := SM.GetServiceById(data.ServerId)
+func (h *Sproxy) OnNetData(data *NetPacket) {
+	s := CM.GetClientById(data.ServerId)
 	if s == nil {
 		return
 	}
@@ -217,19 +217,19 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
 	for k, v := range old {
 		addr := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		if v2, ok := new[k]; ok {
-			if v2.IP != v.IP || v2.Port != v.Port || (v2.IP == v.IP && v2.Port == v.Port && !CM.HasClient(addr)) {
+			if v2.IP != v.IP || v2.Port != v.Port || (v2.IP == v.IP && v2.Port == v.Port && !SM.HasServer(addr)) {
 				log.Debug("-------------------remvoe server", *v)
-				CM.RemoveServerByAddr(addr)
+				SM.RemoveServerByAddr(addr)
 				t, err := NewTClient(addr, pf, 0)
 				if err != nil {
-					log.Warn("proxy client err", err)
+					log.Warn("proxy servererr", addr, err)
 				} else {
-					CM.AddTClient(addr, t)
+					SM.AddTServer(addr, t)
 				}
 			}
 		} else {
 			log.Debug("-------------------remove server", *v)
-			CM.TmpRemoveServerByAddr(addr)
+			SM.TmpRemoveServerByAddr(addr)
 		}
 	}
 
@@ -239,9 +239,9 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
 			log.Debug("-------------------add server", *v)
 			t, err := NewTClient(addr, pf, 60*time.Second)
 			if err != nil {
-				log.Warn("proxy client err", err)
+				log.Warn("proxy client err", addr, err)
 			} else {
-				CM.AddTClient(addr, t)
+				SM.AddTServer(addr, t)
 			}
 		}
 	}
