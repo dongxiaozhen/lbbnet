@@ -16,7 +16,7 @@ var SM = NewServerManager()
 type ClientManager struct {
 	seq     uint32
 	clients map[*Transport]uint32
-	sync.Mutex
+	sync.RWMutex
 }
 
 func NewClientManager() *ClientManager {
@@ -41,14 +41,14 @@ func (s *ClientManager) AddClient(conn *Transport) {
 }
 
 func (s *ClientManager) GetClient(t *Transport) uint32 {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	return s.clients[t]
 }
 
 func (s *ClientManager) GetClientById(sid uint32) *Transport {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	for t, id := range s.clients {
 		if id == sid {
 			return t
@@ -60,7 +60,7 @@ func (s *ClientManager) GetClientById(sid uint32) *Transport {
 type ServerManager struct {
 	clients []*Transport
 	cs      map[string]*TClient
-	sync.Mutex
+	sync.RWMutex
 }
 
 func NewServerManager() *ServerManager {
@@ -68,15 +68,15 @@ func NewServerManager() *ServerManager {
 }
 
 func (c *ServerManager) HasServer(addr string) bool {
-	c.Lock()
-	defer c.Unlock()
+	c.RLock()
+	defer c.RUnlock()
 	_, ok := c.cs[addr]
 	return ok
 }
 
 func (c *ServerManager) GetServer(sharding uint64) *Transport {
-	c.Lock()
-	defer c.Unlock()
+	c.RLock()
+	defer c.RUnlock()
 	if len(c.clients) == 0 {
 		return nil
 	}
