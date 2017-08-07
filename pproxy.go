@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
@@ -183,4 +184,31 @@ func (h *PSproxy) OnNetData(data *NetPacket) {
 		return
 	}
 	s.WriteData(data)
+}
+
+type PCproxy struct {
+}
+
+func (h *PCproxy) OnNetMade(t *Transport) {
+	log.Debug("PCP-------------s made net")
+	CM.AddClient(t)
+}
+
+func (h *PCproxy) OnNetLost(t *Transport) {
+	log.Debug("PCP-------------s lost net")
+	CM.RemoveClient(t)
+}
+
+func (h *PCproxy) OnNetData(data *NetPacket) {
+	id := CM.GetClient(data.Rw)
+	data.ServerId = uint32(id)
+
+	defer goref.Ref("Pproxy").Deref()
+
+	client := PSM.GetServer(data.UserId, data.PacketType)
+	if client == nil {
+		log.Warn("pcp get client emtpy")
+		return
+	}
+	client.WriteData(data)
 }

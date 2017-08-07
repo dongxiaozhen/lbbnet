@@ -16,7 +16,7 @@ import (
 var cfg lbbconsul.ConsulConfig
 var foundServer string
 var sproxy = &lbbnet.PSproxy{}
-var cproxy = &lbbnet.Cproxy{}
+var cproxy = &lbbnet.PCproxy{}
 
 func main() {
 	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
