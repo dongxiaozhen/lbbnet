@@ -213,23 +213,23 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 	s.WriteData(data)
 }
 
-func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
+func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol, pp PProtocol) {
 	for k, v := range old {
 		addr := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		if v2, ok := new[k]; ok {
-			if v2.IP != v.IP || v2.Port != v.Port || (v2.IP == v.IP && v2.Port == v.Port && !SM.HasServer(addr)) {
+			if v2.IP != v.IP || v2.Port != v.Port || (v2.IP == v.IP && v2.Port == v.Port && !pp.HasServer(addr)) {
 				log.Debug("-------------------remvoe server", *v)
-				SM.RemoveServerByAddr(addr)
+				pp.RemoveServerByAddr(addr)
 				t, err := NewTClient(addr, pf, 0)
 				if err != nil {
 					log.Warn("proxy servererr", addr, err)
 				} else {
-					SM.AddTServer(addr, t)
+					pp.AddTServer(addr, t)
 				}
 			}
 		} else {
 			log.Debug("-------------------remove server", *v)
-			SM.TmpRemoveServerByAddr(addr)
+			pp.TmpRemoveServerByAddr(addr)
 		}
 	}
 
@@ -241,7 +241,7 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol) {
 			if err != nil {
 				log.Warn("proxy client err", addr, err)
 			} else {
-				SM.AddTServer(addr, t)
+				pp.AddTServer(addr, t)
 			}
 		}
 	}

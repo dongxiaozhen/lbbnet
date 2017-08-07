@@ -14,6 +14,9 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
+var user_ids []uint64 = []uint64{121, 122, 123, 124, 125, 126, 127, 128, 129, 130}
+var user_len int = 10
+
 type Hello struct {
 	close bool
 }
@@ -23,8 +26,8 @@ func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 	go func() {
 		i := uint64(0)
 		for {
-			time.Sleep(100 * time.Millisecond)
-			p := &lbbnet.NetPacket{UserId: user_id, SessionId: uint32(i), PacketType: uint32(1 + i%2), Data: []byte(fmt.Sprintf("%s:%d", user_str, i))}
+			// time.Sleep(100 * time.Millisecond)
+			p := &lbbnet.NetPacket{UserId: user_ids[i%10], SessionId: uint32(i), PacketType: uint32(1 + i%2), Data: []byte(fmt.Sprintf("%s:%d", user_str, i))}
 			t.WriteData(p)
 			i++
 		}
@@ -49,7 +52,6 @@ func (h *Hello) Close() {
 
 var cfg lbbconsul.ConsulConfig
 var foundServer string
-var user_id uint64
 var user_str string
 
 func main() {
@@ -59,7 +61,6 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
 	flag.StringVar(&user_str, "ustr", "hahaha", "say hello")
-	flag.Uint64Var(&user_id, "user_id", 124, "user id")
 	flag.Parse()
 
 	log.SetLevel(log.WARN)

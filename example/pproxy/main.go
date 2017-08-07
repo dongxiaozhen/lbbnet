@@ -15,7 +15,7 @@ import (
 
 var cfg lbbconsul.ConsulConfig
 var foundServer string
-var sproxy = &lbbnet.Sproxy{}
+var sproxy = &lbbnet.PSproxy{}
 var cproxy = &lbbnet.Cproxy{}
 
 func main() {
@@ -27,8 +27,8 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
-	log.SetLevel(log.WARN)
-	// log.SetLevel(log.ALL)
+	// log.SetLevel(log.WARN)
+	log.SetLevel(log.ALL)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
@@ -63,7 +63,7 @@ func main() {
 			if !ok {
 				log.Warn("not find server err", foundServer)
 			}
-			lbbnet.CompareDiff(oldSer, services, sproxy, lbbnet.SM)
+			lbbnet.CompareDiff(oldSer, services, sproxy, lbbnet.PSM)
 			oldSer = services
 		}
 	}()

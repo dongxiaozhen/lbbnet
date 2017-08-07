@@ -19,8 +19,8 @@ type Hello struct {
 	lbbnet.NetProcess
 }
 
-func (h *Hello) init() {
-	h.Init()
+func (h *Hello) Init() {
+	h.NetProcess.Init()
 	h.RegisterFunc(1, fa)
 	h.RegisterFunc(2, fb)
 }
@@ -54,7 +54,8 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.Parse()
 
-	log.SetLevel(log.WARN)
+	// log.SetLevel(log.WARN)
+	log.SetLevel(log.ALL)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
@@ -69,7 +70,7 @@ func main() {
 	}
 
 	hello := &Hello{}
-	hello.init()
+	hello.Init()
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), hello, 60*time.Second)
 	if err != nil {
 		log.Warn("create server err", err)

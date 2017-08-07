@@ -20,6 +20,7 @@ type Transport struct {
 	writeChan chan []byte
 	close     bool
 	sync.RWMutex
+	sync.WaitGroup
 }
 
 type TSocket struct {
@@ -113,10 +114,13 @@ func (t *Transport) WriteData(data *NetPacket) error {
 }
 
 func (t *Transport) BeginWork() {
+	t.Add(2)
 	go t.beginToRead()
 	go t.beginToWrite()
+	t.Wait()
 }
 func (t *Transport) beginToRead() {
+	t.Done()
 	defer func() {
 		t.Close()
 		close(t.readChan)
@@ -157,6 +161,7 @@ func (t *Transport) beginToRead() {
 }
 
 func (t *Transport) beginToWrite() {
+	t.Done()
 	defer func() {
 		t.Close()
 	}()
