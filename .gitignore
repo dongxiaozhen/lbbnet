@@ -16,3 +16,4 @@ example/rpc/rpc
 example/client/client
 example/server/server
 example/proxy/proxy
+example/pproxy/pproxy
