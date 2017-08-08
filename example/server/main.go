@@ -21,8 +21,14 @@ type Hello struct {
 
 func (h *Hello) Init() {
 	h.NetProcess.Init()
-	h.RegisterFunc(1, fa)
-	h.RegisterFunc(2, fb)
+	if stype == 1 {
+		h.RegisterFunc(1, fa)
+	} else if stype == 2 {
+		h.RegisterFunc(2, fb)
+	} else {
+		h.RegisterFunc(1, fa)
+		h.RegisterFunc(2, fb)
+	}
 }
 
 func fa(data *lbbnet.NetPacket) {
@@ -44,6 +50,7 @@ func fb(data *lbbnet.NetPacket) {
 }
 
 var cfg lbbconsul.ConsulConfig
+var stype int
 
 func main() {
 	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
@@ -52,6 +59,7 @@ func main() {
 	flag.StringVar(&cfg.ServerName, "sname", "serverNode_2", "server name")
 	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9727", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
+	flag.IntVar(&stype, "stype", 1, "f1 f2 fall")
 	flag.Parse()
 
 	// log.SetLevel(log.WARN)

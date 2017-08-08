@@ -21,6 +21,25 @@ func NewPServerManager() *PServerManager {
 	return &PServerManager{cs: make(map[string]*TClient), clients: make(map[uint32][]*Transport), ids: make(map[string][]uint32)}
 }
 
+func (c *PServerManager) GetServerIds(data *NetPacket) {
+	c.RLock()
+	defer c.RUnlock()
+	s := make([]uint32, 0, len(c.clients))
+	for id := range c.clients {
+		s = append(s, id)
+	}
+
+	var err error
+	data.Data, err = json.Marshal(s)
+	if err != nil {
+		log.Error("marshal server id err", err)
+		data.Rw.WriteData(data)
+		return
+	}
+	log.Warn("regist server id", data.Rw.RemoteAddr(), string(data.Data))
+	data.Rw.WriteData(data)
+}
+
 func (c *PServerManager) HasServer(addr string) bool {
 	c.RLock()
 	defer c.RUnlock()
@@ -200,10 +219,14 @@ func (h *PCproxy) OnNetLost(t *Transport) {
 }
 
 func (h *PCproxy) OnNetData(data *NetPacket) {
+	defer goref.Ref("Pproxy").Deref()
+
+	if data.PacketType == 0 {
+		PSM.GetServerIds(data)
+		return
+	}
 	id := CM.GetClient(data.Rw)
 	data.ServerId = uint32(id)
-
-	defer goref.Ref("Pproxy").Deref()
 
 	client := PSM.GetServer(data.UserId, data.PacketType)
 	if client == nil {

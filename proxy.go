@@ -81,7 +81,7 @@ func (c *ServerManager) GetServer(sharding uint64) *Transport {
 		return nil
 	}
 	index := sharding % uint64(len(c.clients))
-	log.Debug("user= ", sharding, "proxy-> ", c.clients[index].RemoteAddr(), "now client_len=", len(c.clients))
+	log.Warn("user= ", sharding, "proxy-> ", c.clients[index].RemoteAddr(), "now client_len=", len(c.clients))
 	return c.clients[index]
 }
 
