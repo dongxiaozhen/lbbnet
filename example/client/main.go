@@ -27,7 +27,7 @@ func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 		i := uint64(0)
 		for {
 			time.Sleep(500 * time.Millisecond)
-			p := &lbbnet.NetPacket{UserId: user_ids[i%10], SessionId: uint32(i), PacketType: uint32(1 + i%2), Data: []byte(fmt.Sprintf("%s:%d", user_str, i))}
+			p := &lbbnet.NetPacket{UserId: user_ids[i%10], SessionId: uint32(i), PacketType: uint32(typebase + i%2), Data: []byte(fmt.Sprintf("%s:%d", user_str, i))}
 			t.WriteData(p)
 			i++
 		}
@@ -53,6 +53,7 @@ func (h *Hello) Close() {
 var cfg lbbconsul.ConsulConfig
 var foundServer string
 var user_str string
+var typebase uint64
 
 func main() {
 	flag.StringVar(&cfg.ServerId, "sid", "client_id_2", "server id")
@@ -61,6 +62,7 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "ppproxy", "found server name")
 	flag.StringVar(&user_str, "ustr", "hahaha", "say hello")
+	flag.Uint64Var(&typebase, "tb", 1, "type base")
 	flag.Parse()
 
 	log.SetLevel(log.WARN)
