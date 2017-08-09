@@ -26,7 +26,7 @@ func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 	go func() {
 		i := uint64(0)
 		for {
-			time.Sleep(2000 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			p := &lbbnet.NetPacket{UserId: user_ids[i%10], SessionId: uint32(i), PacketType: uint32(1 + i%2), Data: []byte(fmt.Sprintf("%s:%d", user_str, i))}
 			t.WriteData(p)
 			i++
@@ -59,7 +59,7 @@ func main() {
 	flag.StringVar(&cfg.ServerName, "sname", "client_id", "server name")
 	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9429", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
-	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
+	flag.StringVar(&foundServer, "fdsvr", "ppproxy", "found server name")
 	flag.StringVar(&user_str, "ustr", "hahaha", "say hello")
 	flag.Parse()
 

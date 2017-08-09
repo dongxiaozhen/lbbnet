@@ -180,7 +180,7 @@ func (h *Cproxy) OnNetLost(t *Transport) {
 
 func (h *Cproxy) OnNetData(data *NetPacket) {
 	id := CM.GetClient(data.Rw)
-	data.ServerId = uint32(id)
+	data.From2 = uint32(id)
 
 	defer goref.Ref("proxy").Deref()
 
@@ -206,7 +206,7 @@ func (h *Sproxy) OnNetLost(t *Transport) {
 }
 
 func (h *Sproxy) OnNetData(data *NetPacket) {
-	s := CM.GetClientById(data.ServerId)
+	s := CM.GetClientById(data.From2)
 	if s == nil {
 		return
 	}

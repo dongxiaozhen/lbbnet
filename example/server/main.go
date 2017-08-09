@@ -33,7 +33,7 @@ func (h *Hello) Init() {
 
 func fa(data *lbbnet.NetPacket) {
 	defer goref.Ref("fa").Deref()
-	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
+	suf := fmt.Sprintf("1 %d,%d,%d,%d,seqid %d", data.UserId, data.From2, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -42,7 +42,7 @@ func fa(data *lbbnet.NetPacket) {
 func fb(data *lbbnet.NetPacket) {
 	defer goref.Ref("fb").Deref()
 	log.Debug("fb start")
-	suf := fmt.Sprintf("2 %d,%d,%d,%d,seqid %d", data.UserId, data.ServerId, data.SessionId, data.PacketType, data.SeqId)
+	suf := fmt.Sprintf("2 %d,%d,%d,%d,seqid %d", data.UserId, data.From2, data.SessionId, data.PacketType, data.SeqId)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)

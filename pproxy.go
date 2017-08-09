@@ -2,6 +2,7 @@ package lbbnet
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/dongxiaozhen/lbbref/goref"
@@ -54,6 +55,7 @@ func (c *PServerManager) GetServer(sharding uint64, packId uint32) *Transport {
 	if slen == 0 {
 		return nil
 	}
+	goref.Ref(fmt.Sprintf("packId_%d", packId)).Deref()
 	index := sharding % uint64(slen)
 	log.Debug("user= ", sharding, "proxy-> ", c.clients[packId][index].RemoteAddr(), "now client_len=", slen)
 	return c.clients[packId][index]
@@ -198,8 +200,9 @@ func (h *PSproxy) OnNetData(data *NetPacket) {
 		PSM.AddServer(data.Rw, ids)
 		return
 	}
-	s := CM.GetClientById(data.ServerId)
+	s := CM.GetClientById(data.From2)
 	if s == nil {
+		log.Warn("PSproxy client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)
 		return
 	}
 	s.WriteData(data)
@@ -226,12 +229,82 @@ func (h *PCproxy) OnNetData(data *NetPacket) {
 		return
 	}
 	id := CM.GetClient(data.Rw)
-	data.ServerId = uint32(id)
+	data.From2 = uint32(id)
 
 	client := PSM.GetServer(data.UserId, data.PacketType)
 	if client == nil {
-		log.Warn("pcp get client emtpy")
+		log.Warn("pcp get client emtpy", data.PacketType)
 		return
 	}
 	client.WriteData(data)
+}
+
+type PpCproxy struct {
+}
+
+func (h *PpCproxy) OnNetMade(t *Transport) {
+	log.Debug("PCP-------------s made net")
+	CM.AddClient(t)
+}
+
+func (h *PpCproxy) OnNetLost(t *Transport) {
+	log.Debug("PCP-------------s lost net")
+	CM.RemoveClient(t)
+}
+
+func (h *PpCproxy) OnNetData(data *NetPacket) {
+	defer goref.Ref("Pproxy").Deref()
+
+	if data.PacketType == 0 {
+		PSM.GetServerIds(data)
+		return
+	}
+	id := CM.GetClient(data.Rw)
+	data.From1 = uint32(id)
+
+	client := PSM.GetServer(data.UserId, data.PacketType)
+	if client == nil {
+		log.Warn("pcp get client emtpy", data.PacketType)
+		return
+	}
+	client.WriteData(data)
+}
+
+type PpSproxy struct {
+}
+
+func (h *PpSproxy) registerService(t *Transport) error {
+	p := &NetPacket{PacketType: 0}
+	return t.WriteData(p)
+}
+func (h *PpSproxy) OnNetMade(t *Transport) {
+	log.Warn("PpSP--------->made", t.RemoteAddr())
+	err := h.registerService(t)
+	if err != nil {
+		log.Error("send server register", t.RemoteAddr())
+	}
+}
+
+func (h *PpSproxy) OnNetLost(t *Transport) {
+	log.Warn("PpSP--------->lost", t.RemoteAddr())
+	PSM.RemServer(t)
+}
+
+func (h *PpSproxy) OnNetData(data *NetPacket) {
+	if data.PacketType == 0 {
+		var ids []uint32
+		if err := json.Unmarshal(data.Data, &ids); err != nil {
+			log.Error("server id not register", data.Rw.RemoteAddr())
+		} else {
+			log.Warn("server type", data.Rw.RemoteAddr(), string(data.Data))
+		}
+		PSM.AddServer(data.Rw, ids)
+		return
+	}
+	s := CM.GetClientById(data.From1)
+	if s == nil {
+		log.Warn("PpSproxy client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)
+		return
+	}
+	s.WriteData(data)
 }
