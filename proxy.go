@@ -57,6 +57,16 @@ func (s *ClientManager) GetClientById(sid uint32) *Transport {
 	return nil
 }
 
+func (s *ClientManager) GetClients() []*Transport {
+	s.RLock()
+	defer s.RUnlock()
+	ret := make([]*Transport, 0, len(s.clients))
+	for t := range s.clients {
+		ret = append(ret, t)
+	}
+	return ret
+}
+
 type ServerManager struct {
 	clients []*Transport
 	cs      map[string]*TClient

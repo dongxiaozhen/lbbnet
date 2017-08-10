@@ -25,7 +25,7 @@ func (h *NetProcess) Init() {
 var ErrFuncFind = errors.New("函数已经注册")
 
 func (h *NetProcess) RegisterServer() {
-	h.RegisterFunc(0, h.f)
+	h.RegisterFunc(PTypeRegistServer, h.f)
 }
 
 func (h *NetProcess) f(data *NetPacket) {

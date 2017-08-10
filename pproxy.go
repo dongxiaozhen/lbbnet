@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/dongxiaozhen/lbbref/goref"
+	"github.com/dongxiaozhen/lbbsort"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
@@ -65,9 +66,37 @@ func (c *PServerManager) AddServer(t *Transport, ids []uint32) {
 	log.Warn("PSM---------Add", t.RemoteAddr())
 	c.Lock()
 	defer c.Unlock()
-	c.ids[t.RemoteAddr()] = ids
-	for _, id := range ids {
-		c.clients[id] = append(c.clients[id], t)
+	addr := t.RemoteAddr()
+	c.ids[addr] = ids
+	if tids, ok := c.ids[addr]; ok {
+
+		// 添加
+		for _, id := range ids {
+			sids := lbbsort.Uint32Slice(tids)
+			index := sids.Search(id)
+			if tids[index] != id {
+				c.clients[id] = append(c.clients[id], t)
+				log.Warn("PSM add type-->", id, addr)
+			}
+		}
+
+		// 删除
+		for _, id := range tids {
+			sids := lbbsort.Uint32Slice(ids)
+			index := sids.Search(id)
+			if ids[index] != id {
+				for tmp, trp := range c.clients[id] {
+					if trp == t {
+						c.clients[id] = append(c.clients[id][:tmp], c.clients[id][tmp+1:]...)
+						log.Warn("PSM remove type-->", id, addr)
+					}
+				}
+			}
+		}
+	} else {
+		for _, id := range ids {
+			c.clients[id] = append(c.clients[id], t)
+		}
 	}
 }
 
@@ -172,8 +201,16 @@ func (c *PServerManager) RemoveServerByAddr(addr string) {
 type PSproxy struct {
 }
 
+func (h *PSproxy) reverseRegisterService() {
+	for _, t := range CM.GetClients() {
+		p := &NetPacket{PacketType: PTypeReverseRegistServer}
+		err := t.WriteData(p)
+		log.Error("reverse register server err: s=", t.RemoteAddr(), err)
+	}
+}
+
 func (h *PSproxy) registerService(t *Transport) error {
-	p := &NetPacket{PacketType: 0}
+	p := &NetPacket{PacketType: PTypeRegistServer}
 	return t.WriteData(p)
 }
 func (h *PSproxy) OnNetMade(t *Transport) {
@@ -190,7 +227,7 @@ func (h *PSproxy) OnNetLost(t *Transport) {
 }
 
 func (h *PSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == 0 {
+	if data.PacketType == PTypeRegistServer {
 		var ids []uint32
 		if err := json.Unmarshal(data.Data, &ids); err != nil {
 			log.Error("server id not register", data.Rw.RemoteAddr())
@@ -198,6 +235,8 @@ func (h *PSproxy) OnNetData(data *NetPacket) {
 			log.Warn("server type", data.Rw.RemoteAddr(), string(data.Data))
 		}
 		PSM.AddServer(data.Rw, ids)
+		// 反向注册
+		h.reverseRegisterService()
 		return
 	}
 	s := CM.GetClientById(data.From2)
@@ -224,7 +263,7 @@ func (h *PCproxy) OnNetLost(t *Transport) {
 func (h *PCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("Pproxy").Deref()
 
-	if data.PacketType == 0 {
+	if data.PacketType == PTypeRegistServer {
 		PSM.GetServerIds(data)
 		return
 	}
@@ -255,7 +294,7 @@ func (h *PpCproxy) OnNetLost(t *Transport) {
 func (h *PpCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("Pproxy").Deref()
 
-	if data.PacketType == 0 {
+	if data.PacketType == PTypeRegistServer {
 		PSM.GetServerIds(data)
 		return
 	}
@@ -274,7 +313,7 @@ type PpSproxy struct {
 }
 
 func (h *PpSproxy) registerService(t *Transport) error {
-	p := &NetPacket{PacketType: 0}
+	p := &NetPacket{PacketType: PTypeRegistServer}
 	return t.WriteData(p)
 }
 func (h *PpSproxy) OnNetMade(t *Transport) {
@@ -291,7 +330,7 @@ func (h *PpSproxy) OnNetLost(t *Transport) {
 }
 
 func (h *PpSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == 0 {
+	if data.PacketType == PTypeRegistServer {
 		var ids []uint32
 		if err := json.Unmarshal(data.Data, &ids); err != nil {
 			log.Error("server id not register", data.Rw.RemoteAddr())
@@ -300,6 +339,11 @@ func (h *PpSproxy) OnNetData(data *NetPacket) {
 		}
 		PSM.AddServer(data.Rw, ids)
 		return
+	} else if data.PacketType == PTypeReverseRegistServer {
+		err := h.registerService(data.Rw)
+		if err != nil {
+			log.Error("reverse server regist response  register err", data.Rw.RemoteAddr(), err)
+		}
 	}
 	s := CM.GetClientById(data.From1)
 	if s == nil {
