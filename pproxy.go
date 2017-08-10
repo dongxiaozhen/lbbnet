@@ -27,9 +27,12 @@ func (c *PServerManager) GetServerIds(data *NetPacket) {
 	c.RLock()
 	defer c.RUnlock()
 	s := make([]uint32, 0, len(c.clients))
-	for id := range c.clients {
-		s = append(s, id)
+	for id, value := range c.clients {
+		if len(value) > 0 {
+			s = append(s, id)
+		}
 	}
+	lbbsort.Uint32s(s)
 
 	var err error
 	data.Data, err = json.Marshal(s)
@@ -63,40 +66,55 @@ func (c *PServerManager) GetServer(sharding uint64, packId uint32) *Transport {
 }
 
 func (c *PServerManager) AddServer(t *Transport, ids []uint32) {
-	log.Warn("PSM---------Add", t.RemoteAddr())
+	log.Warn("PSM---------Add", t.RemoteAddr(), ids)
 	c.Lock()
 	defer c.Unlock()
 	addr := t.RemoteAddr()
-	c.ids[addr] = ids
 	if tids, ok := c.ids[addr]; ok {
 
-		// 添加
-		for _, id := range ids {
-			sids := lbbsort.Uint32Slice(tids)
-			index := sids.Search(id)
-			if tids[index] != id {
-				c.clients[id] = append(c.clients[id], t)
-				log.Warn("PSM add type-->", id, addr)
-			}
-		}
-
 		// 删除
+		log.Warn("delete from PSM")
+		lbbsort.Uint32s(tids)
+		lenIds := len(ids)
 		for _, id := range tids {
 			sids := lbbsort.Uint32Slice(ids)
 			index := sids.Search(id)
-			if ids[index] != id {
+			if index >= lenIds || ids[index] != id {
 				for tmp, trp := range c.clients[id] {
 					if trp == t {
 						c.clients[id] = append(c.clients[id][:tmp], c.clients[id][tmp+1:]...)
 						log.Warn("PSM remove type-->", id, addr)
 					}
 				}
+				for tmp, id2 := range c.ids[addr] {
+					if id2 == id {
+						c.ids[addr] = append(c.ids[addr][:tmp], c.ids[addr][tmp+1:]...)
+					}
+				}
 			}
 		}
+
+		log.Warn("Add to PSM")
+		// 添加
+		tids = c.ids[addr]
+		lbbsort.Uint32s(tids)
+		lenTids := len(tids)
+		for _, id := range ids {
+			sids := lbbsort.Uint32Slice(tids)
+			index := sids.Search(id)
+			if index >= lenTids || tids[index] != id {
+				c.clients[id] = append(c.clients[id], t)
+				log.Warn("PSM add type-->", id, addr)
+				c.ids[addr] = append(c.ids[addr], id)
+			}
+		}
+
 	} else {
 		for _, id := range ids {
 			c.clients[id] = append(c.clients[id], t)
+			log.Warn("PSM add type-->", id, addr)
 		}
+		c.ids[addr] = ids
 	}
 }
 
@@ -109,10 +127,10 @@ func (c *PServerManager) AddTServer(addr string, t *TClient) {
 
 // 被动关闭一个后端服务
 func (c *PServerManager) RemServer(t *Transport) {
-	log.Warn("PSM---------服务断开连接", t.RemoteAddr())
 	c.Lock()
 	defer c.Unlock()
 	addr := t.RemoteAddr()
+	log.Warn("PSM---------服务断开连接", addr)
 	index := -1
 	if s, ok := c.ids[addr]; ok {
 		for _, id := range s {
@@ -125,18 +143,24 @@ func (c *PServerManager) RemServer(t *Transport) {
 			}
 			if index != -1 {
 				c.clients[id] = append(c.clients[id][:index], c.clients[id][index+1:]...)
+				log.Warn("PSM  remove type-->", id, addr)
+			} else {
+				log.Warn("PSM  remove type not find-->", id, addr)
 			}
 		}
+	} else {
+		log.Warn("PSM  RemServer empty ids", addr)
 	}
+
+	delete(c.ids, addr)
 
 	tclient := c.cs[addr]
 	if tclient == nil {
 		log.Warn("---------lbbnet------remove client empty", addr)
 		return
 	}
-	tclient.Close()
 	delete(c.cs, addr)
-	delete(c.ids, addr)
+	tclient.Close()
 }
 
 //主动关闭一个后端服务--暂时
@@ -202,10 +226,15 @@ type PSproxy struct {
 }
 
 func (h *PSproxy) reverseRegisterService() {
+	log.Warn("PSP--------->reverseRegister")
 	for _, t := range CM.GetClients() {
 		p := &NetPacket{PacketType: PTypeReverseRegistServer}
 		err := t.WriteData(p)
-		log.Error("reverse register server err: s=", t.RemoteAddr(), err)
+		if err != nil {
+			log.Error("reverse register server err: s=", t.RemoteAddr(), err)
+		} else {
+			log.Warn("reverse register server s=", t.RemoteAddr())
+		}
 	}
 }
 
@@ -224,6 +253,7 @@ func (h *PSproxy) OnNetMade(t *Transport) {
 func (h *PSproxy) OnNetLost(t *Transport) {
 	log.Warn("PSP--------->lost", t.RemoteAddr())
 	PSM.RemServer(t)
+	h.reverseRegisterService()
 }
 
 func (h *PSproxy) OnNetData(data *NetPacket) {
@@ -264,6 +294,7 @@ func (h *PCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("Pproxy").Deref()
 
 	if data.PacketType == PTypeRegistServer {
+		log.Warn("get register packet", data.Rw.RemoteAddr())
 		PSM.GetServerIds(data)
 		return
 	}
@@ -295,6 +326,7 @@ func (h *PpCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("Pproxy").Deref()
 
 	if data.PacketType == PTypeRegistServer {
+		log.Warn("PpCp remote get Regist-->", data.Rw.RemoteAddr())
 		PSM.GetServerIds(data)
 		return
 	}
@@ -344,6 +376,7 @@ func (h *PpSproxy) OnNetData(data *NetPacket) {
 		if err != nil {
 			log.Error("reverse server regist response  register err", data.Rw.RemoteAddr(), err)
 		}
+		return
 	}
 	s := CM.GetClientById(data.From1)
 	if s == nil {

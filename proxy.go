@@ -3,7 +3,6 @@ package lbbnet
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbref/goref"
@@ -247,7 +246,7 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol, pp PPr
 		addr := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		if _, ok := old[k]; !ok {
 			log.Debug("-------------------add server", *v)
-			t, err := NewTClient(addr, pf, 60*time.Second)
+			t, err := NewTClient(addr, pf, 0)
 			if err != nil {
 				log.Warn("proxy client err", addr, err)
 			} else {

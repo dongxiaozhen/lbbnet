@@ -15,7 +15,7 @@ import (
 
 var cfg lbbconsul.ConsulConfig
 var foundServer string
-var sproxy = &lbbnet.PSproxy{}
+var sproxy = &lbbnet.PpSproxy{}
 var cproxy = &lbbnet.PpCproxy{}
 
 func main() {
