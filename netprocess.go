@@ -57,11 +57,13 @@ func (h *NetProcess) RegisterFunc(packType uint32, f func(*NetPacket)) error {
 }
 
 func (h *NetProcess) OnNetMade(t *Transport) {
-	log.Debug("------------t made")
+	log.Warn("NetProcess  made ", t.RemoteAddr())
 }
+
 func (h *NetProcess) OnNetLost(t *Transport) {
-	log.Debug("------------t lost")
+	log.Warn("NetProcess lost ", t.RemoteAddr())
 }
+
 func (h *NetProcess) OnNetData(data *NetPacket) {
 	log.Debug("NetProcess ondata", data.PacketType, data.UserId)
 	if h.close {

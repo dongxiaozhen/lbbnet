@@ -18,3 +18,9 @@ example/server/server
 example/proxy/proxy
 example/pproxy/pproxy
 example/ppproxy/ppproxy
+example/fproxy/fproxy
+example/fproxy/log/
+example/mproxy/log/
+example/mproxy/mproxy
+example/proxy/log/
+example/server/log/

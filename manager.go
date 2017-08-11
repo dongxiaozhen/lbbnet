@@ -11,6 +11,170 @@ import (
 )
 
 var PSM = NewPServerManager()
+var CM = NewClientManager()
+var SM = NewServerManager()
+
+type ClientManager struct {
+	seq     uint32
+	clients map[*Transport]uint32
+	sync.RWMutex
+}
+
+func NewClientManager() *ClientManager {
+	return &ClientManager{
+		seq:     0,
+		clients: make(map[*Transport]uint32),
+	}
+}
+
+func (s *ClientManager) RemoveClient(t *Transport) {
+	s.Lock()
+	defer s.Unlock()
+	t.Close()
+	delete(s.clients, t)
+}
+
+func (s *ClientManager) AddClient(conn *Transport) {
+	s.Lock()
+	defer s.Unlock()
+	s.seq++
+	s.clients[conn] = s.seq
+}
+
+func (s *ClientManager) GetClient(t *Transport) uint32 {
+	s.RLock()
+	defer s.RUnlock()
+	return s.clients[t]
+}
+
+func (s *ClientManager) GetClientById(sid uint32) *Transport {
+	s.RLock()
+	defer s.RUnlock()
+	for t, id := range s.clients {
+		if id == sid {
+			return t
+		}
+	}
+	return nil
+}
+
+func (s *ClientManager) GetClients() []*Transport {
+	s.RLock()
+	defer s.RUnlock()
+	ret := make([]*Transport, 0, len(s.clients))
+	for t := range s.clients {
+		ret = append(ret, t)
+	}
+	return ret
+}
+
+type ServerManager struct {
+	clients []*Transport
+	cs      map[string]*TClient
+	sync.RWMutex
+}
+
+func NewServerManager() *ServerManager {
+	return &ServerManager{cs: make(map[string]*TClient)}
+}
+
+func (c *ServerManager) HasServer(addr string) bool {
+	c.RLock()
+	defer c.RUnlock()
+	_, ok := c.cs[addr]
+	return ok
+}
+
+func (c *ServerManager) GetServer(sharding uint64) *Transport {
+	c.RLock()
+	defer c.RUnlock()
+	if len(c.clients) == 0 {
+		return nil
+	}
+	index := sharding % uint64(len(c.clients))
+	log.Warn("user= ", sharding, "proxy-> ", c.clients[index].RemoteAddr(), "now client_len=", len(c.clients))
+	return c.clients[index]
+}
+
+func (c *ServerManager) AddServer(t *Transport) {
+	log.Warn("SM---------Add", t.RemoteAddr())
+	c.Lock()
+	defer c.Unlock()
+	c.clients = append(c.clients, t)
+}
+
+func (c *ServerManager) AddTServer(addr string, t *TClient) {
+	log.Warn("SM---------AddT", addr)
+	c.Lock()
+	defer c.Unlock()
+	c.cs[addr] = t
+}
+
+// 被动关闭一个后端服务
+func (c *ServerManager) RemServer(t *Transport) {
+	log.Warn("SM---------服务断开连接", t.RemoteAddr())
+	c.Lock()
+	defer c.Unlock()
+	index := -1
+	for i := range c.clients {
+		if c.clients[i] == t {
+			index = i
+			break
+		}
+	}
+	if index != -1 {
+		c.clients = append(c.clients[:index], c.clients[index+1:]...)
+	}
+
+	addr := t.RemoteAddr()
+	tclient := c.cs[addr]
+	if tclient == nil {
+		log.Warn("---------lbbnet------remove client empty", addr)
+		return
+	}
+	tclient.Close()
+	delete(c.cs, addr)
+}
+
+//主动关闭一个后端服务--暂时
+func (c *ServerManager) TmpRemoveServerByAddr(addr string) {
+	log.Warn("SM---------暂停服务", addr)
+	c.Lock()
+	defer c.Unlock()
+	i := -1
+	for index := range c.clients {
+		if c.clients[index].RemoteAddr() == addr {
+			i = index
+			break
+		}
+	}
+	if i != -1 {
+		c.clients = append(c.clients[:i], c.clients[i+1:]...)
+	}
+}
+
+// 主动关闭一个后端服务
+func (c *ServerManager) RemoveServerByAddr(addr string) {
+	log.Warn("SM---------代理主动关闭连接", addr)
+	c.Lock()
+	defer c.Unlock()
+	t := c.cs[addr]
+	if t == nil {
+		return
+	}
+	delete(c.cs, addr)
+	i := -1
+	for index := range c.clients {
+		if c.clients[index].RemoteAddr() == addr {
+			i = index
+			break
+		}
+	}
+	if i != -1 {
+		c.clients = append(c.clients[:i], c.clients[i+1:]...)
+	}
+	t.Close()
+}
 
 type PServerManager struct {
 	clients map[uint32][]*Transport
@@ -104,7 +268,7 @@ func (c *PServerManager) AddServer(t *Transport, ids []uint32) {
 			index := sids.Search(id)
 			if index >= lenTids || tids[index] != id {
 				c.clients[id] = append(c.clients[id], t)
-				log.Warn("PSM add type-->", id, addr)
+				log.Warn("PSM add type--> ", id, addr)
 				c.ids[addr] = append(c.ids[addr], id)
 			}
 		}
@@ -112,14 +276,14 @@ func (c *PServerManager) AddServer(t *Transport, ids []uint32) {
 	} else {
 		for _, id := range ids {
 			c.clients[id] = append(c.clients[id], t)
-			log.Warn("PSM add type-->", id, addr)
+			log.Warn("PSM add type--> ", id, addr)
 		}
 		c.ids[addr] = ids
 	}
 }
 
 func (c *PServerManager) AddTServer(addr string, t *TClient) {
-	log.Warn("PSM---------AddT", addr)
+	log.Warn("PSM---------AddT ", addr)
 	c.Lock()
 	defer c.Unlock()
 	c.cs[addr] = t
@@ -193,7 +357,7 @@ func (c *PServerManager) TmpRemoveServerByAddr(addr string) {
 
 // 主动关闭一个后端服务
 func (c *PServerManager) RemoveServerByAddr(addr string) {
-	log.Warn("PSM---------代理主动关闭连接", addr)
+	log.Warn("PSM---------代理主动关闭连接 ", addr)
 	c.Lock()
 	defer c.Unlock()
 	t := c.cs[addr]
@@ -220,168 +384,4 @@ func (c *PServerManager) RemoveServerByAddr(addr string) {
 	delete(c.ids, addr)
 
 	t.Close()
-}
-
-type PSproxy struct {
-}
-
-func (h *PSproxy) reverseRegisterService() {
-	log.Warn("PSP--------->reverseRegister")
-	for _, t := range CM.GetClients() {
-		p := &NetPacket{PacketType: PTypeReverseRegistServer}
-		err := t.WriteData(p)
-		if err != nil {
-			log.Error("reverse register server err: s=", t.RemoteAddr(), err)
-		} else {
-			log.Warn("reverse register server s=", t.RemoteAddr())
-		}
-	}
-}
-
-func (h *PSproxy) registerService(t *Transport) error {
-	p := &NetPacket{PacketType: PTypeRegistServer}
-	return t.WriteData(p)
-}
-func (h *PSproxy) OnNetMade(t *Transport) {
-	log.Warn("PSP--------->made", t.RemoteAddr())
-	err := h.registerService(t)
-	if err != nil {
-		log.Error("send server register", t.RemoteAddr())
-	}
-}
-
-func (h *PSproxy) OnNetLost(t *Transport) {
-	log.Warn("PSP--------->lost", t.RemoteAddr())
-	PSM.RemServer(t)
-	h.reverseRegisterService()
-}
-
-func (h *PSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == PTypeRegistServer {
-		var ids []uint32
-		if err := json.Unmarshal(data.Data, &ids); err != nil {
-			log.Error("server id not register", data.Rw.RemoteAddr())
-		} else {
-			log.Warn("server type", data.Rw.RemoteAddr(), string(data.Data))
-		}
-		PSM.AddServer(data.Rw, ids)
-		// 反向注册
-		h.reverseRegisterService()
-		return
-	}
-	s := CM.GetClientById(data.From2)
-	if s == nil {
-		log.Warn("PSproxy client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)
-		return
-	}
-	s.WriteData(data)
-}
-
-type PCproxy struct {
-}
-
-func (h *PCproxy) OnNetMade(t *Transport) {
-	log.Debug("PCP-------------s made net")
-	CM.AddClient(t)
-}
-
-func (h *PCproxy) OnNetLost(t *Transport) {
-	log.Debug("PCP-------------s lost net")
-	CM.RemoveClient(t)
-}
-
-func (h *PCproxy) OnNetData(data *NetPacket) {
-	defer goref.Ref("Pproxy").Deref()
-
-	if data.PacketType == PTypeRegistServer {
-		log.Warn("get register packet", data.Rw.RemoteAddr())
-		PSM.GetServerIds(data)
-		return
-	}
-	id := CM.GetClient(data.Rw)
-	data.From2 = uint32(id)
-
-	client := PSM.GetServer(data.UserId, data.PacketType)
-	if client == nil {
-		log.Warn("pcp get client emtpy", data.PacketType)
-		return
-	}
-	client.WriteData(data)
-}
-
-type PpCproxy struct {
-}
-
-func (h *PpCproxy) OnNetMade(t *Transport) {
-	log.Debug("PCP-------------s made net")
-	CM.AddClient(t)
-}
-
-func (h *PpCproxy) OnNetLost(t *Transport) {
-	log.Debug("PCP-------------s lost net")
-	CM.RemoveClient(t)
-}
-
-func (h *PpCproxy) OnNetData(data *NetPacket) {
-	defer goref.Ref("Pproxy").Deref()
-
-	if data.PacketType == PTypeRegistServer {
-		log.Warn("PpCp remote get Regist-->", data.Rw.RemoteAddr())
-		PSM.GetServerIds(data)
-		return
-	}
-	id := CM.GetClient(data.Rw)
-	data.From1 = uint32(id)
-
-	client := PSM.GetServer(data.UserId, data.PacketType)
-	if client == nil {
-		log.Warn("pcp get client emtpy", data.PacketType)
-		return
-	}
-	client.WriteData(data)
-}
-
-type PpSproxy struct {
-}
-
-func (h *PpSproxy) registerService(t *Transport) error {
-	p := &NetPacket{PacketType: PTypeRegistServer}
-	return t.WriteData(p)
-}
-func (h *PpSproxy) OnNetMade(t *Transport) {
-	log.Warn("PpSP--------->made", t.RemoteAddr())
-	err := h.registerService(t)
-	if err != nil {
-		log.Error("send server register", t.RemoteAddr())
-	}
-}
-
-func (h *PpSproxy) OnNetLost(t *Transport) {
-	log.Warn("PpSP--------->lost", t.RemoteAddr())
-	PSM.RemServer(t)
-}
-
-func (h *PpSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == PTypeRegistServer {
-		var ids []uint32
-		if err := json.Unmarshal(data.Data, &ids); err != nil {
-			log.Error("server id not register", data.Rw.RemoteAddr())
-		} else {
-			log.Warn("server type", data.Rw.RemoteAddr(), string(data.Data))
-		}
-		PSM.AddServer(data.Rw, ids)
-		return
-	} else if data.PacketType == PTypeReverseRegistServer {
-		err := h.registerService(data.Rw)
-		if err != nil {
-			log.Error("reverse server regist response  register err", data.Rw.RemoteAddr(), err)
-		}
-		return
-	}
-	s := CM.GetClientById(data.From1)
-	if s == nil {
-		log.Warn("PpSproxy client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)
-		return
-	}
-	s.WriteData(data)
 }

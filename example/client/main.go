@@ -22,7 +22,7 @@ type Hello struct {
 }
 
 func (h *Hello) OnNetMade(t *lbbnet.Transport) {
-	log.Debug("connect mad")
+	log.Warn("connect mad ", t.RemoteAddr())
 	go func() {
 		i := uint64(0)
 		for {
@@ -36,18 +36,18 @@ func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 
 func (h *Hello) OnNetData(data *lbbnet.NetPacket) {
 	if h.close {
-		log.Debug("OnNetData close")
+		log.Warn("OnNetData close")
 		return
 	}
 	log.Warn("recv", string(data.Data))
 }
 func (h *Hello) OnNetLost(t *lbbnet.Transport) {
-	log.Debug("connect lost")
+	log.Warn("connect lost ", t.RemoteAddr())
 }
 
 func (h *Hello) Close() {
 	h.close = true
-	log.Debug("hello close")
+	log.Warn("hello close")
 }
 
 var cfg lbbconsul.ConsulConfig
@@ -66,6 +66,9 @@ func main() {
 	flag.Parse()
 
 	log.SetLevel(log.WARN)
+	log.SetConsole(false)
+	log.SetRollingFile("log", "client", 10, 5, log.MB)
+
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"

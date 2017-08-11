@@ -134,8 +134,10 @@ func main() {
 	flag.IntVar(&stype, "stype", 1, "f1 f2 fall")
 	flag.Parse()
 
-	// log.SetLevel(log.WARN)
-	log.SetLevel(log.ALL)
+	log.SetLevel(log.WARN)
+	log.SetConsole(false)
+	// log.SetLevel(log.ALL)
+	log.SetRollingFile("log", "server_log", 10, 5, log.MB)
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"

@@ -27,8 +27,12 @@ func main() {
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
+
 	log.SetLevel(log.WARN)
+	log.SetConsole(false)
 	// log.SetLevel(log.ALL)
+	log.SetRollingFile("log", "proxy", 10, 5, log.MB)
+
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"

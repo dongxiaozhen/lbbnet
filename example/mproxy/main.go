@@ -15,20 +15,24 @@ import (
 
 var cfg lbbconsul.ConsulConfig
 var foundServer string
-var sproxy = &lbbnet.PpSproxy{}
-var cproxy = &lbbnet.PpCproxy{}
+var sproxy = &lbbnet.MSproxy{}
+var cproxy = &lbbnet.MCproxy{}
 
 func main() {
 	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
-	flag.IntVar(&cfg.Port, "port", 8991, "server port")
-	flag.StringVar(&cfg.ServerId, "sid", "ppproxy_id_1", "server id")
-	flag.StringVar(&cfg.ServerName, "sname", "ppproxy", "server name")
-	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:8891", "monitor addr")
+	flag.IntVar(&cfg.Port, "port", 2222, "server port")
+	flag.StringVar(&cfg.ServerId, "sid", "proxy_id_1", "server id")
+	flag.StringVar(&cfg.ServerName, "sname", "server_proxy", "server name")
+	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:2221", "monitor addr")
 	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
-	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
+	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
-	// log.SetLevel(log.WARN)
-	log.SetLevel(log.ALL)
+
+	log.SetLevel(log.WARN)
+	// log.SetLevel(log.ALL)
+	log.SetConsole(false)
+	log.SetRollingFile("log", "mproxy", 10, 5, log.MB)
+
 	cfg.MInterval = "5s"
 	cfg.MTimeOut = "2s"
 	cfg.DeregisterTime = "20s"
