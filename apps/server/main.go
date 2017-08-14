@@ -42,7 +42,7 @@ func (h *Hello) Init() {
 
 func fa(data *lbbnet.NetPacket) {
 	defer goref.Ref("fa").Deref()
-	suf := fmt.Sprintf("fa %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fa %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -50,7 +50,7 @@ func fa(data *lbbnet.NetPacket) {
 }
 func fb(data *lbbnet.NetPacket) {
 	defer goref.Ref("fb").Deref()
-	suf := fmt.Sprintf("fb %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fb %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -58,7 +58,7 @@ func fb(data *lbbnet.NetPacket) {
 }
 func fc(data *lbbnet.NetPacket) {
 	defer goref.Ref("fc").Deref()
-	suf := fmt.Sprintf("fc %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fc %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -66,7 +66,7 @@ func fc(data *lbbnet.NetPacket) {
 }
 func fd(data *lbbnet.NetPacket) {
 	defer goref.Ref("fd").Deref()
-	suf := fmt.Sprintf("fd %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fd %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -74,7 +74,7 @@ func fd(data *lbbnet.NetPacket) {
 }
 func fe(data *lbbnet.NetPacket) {
 	defer goref.Ref("fe").Deref()
-	suf := fmt.Sprintf("fe %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fe %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -82,7 +82,7 @@ func fe(data *lbbnet.NetPacket) {
 }
 func ff(data *lbbnet.NetPacket) {
 	defer goref.Ref("ff").Deref()
-	suf := fmt.Sprintf("ff %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("ff %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -90,7 +90,7 @@ func ff(data *lbbnet.NetPacket) {
 }
 func fg(data *lbbnet.NetPacket) {
 	defer goref.Ref("fg").Deref()
-	suf := fmt.Sprintf("fg %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fg %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -98,7 +98,7 @@ func fg(data *lbbnet.NetPacket) {
 }
 func fh(data *lbbnet.NetPacket) {
 	defer goref.Ref("fh").Deref()
-	suf := fmt.Sprintf("fh %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fh %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -106,7 +106,7 @@ func fh(data *lbbnet.NetPacket) {
 }
 func fi(data *lbbnet.NetPacket) {
 	defer goref.Ref("fi").Deref()
-	suf := fmt.Sprintf("fi %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fi %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
@@ -114,23 +114,16 @@ func fi(data *lbbnet.NetPacket) {
 }
 func fj(data *lbbnet.NetPacket) {
 	defer goref.Ref("fj").Deref()
-	suf := fmt.Sprintf("fj %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, cfg.Port)
+	suf := fmt.Sprintf("fj %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
 	data.Rw.WriteData(data)
 }
 
-var cfg lbbconsul.ConsulConfig
 var stype int
 
 func main() {
-	flag.StringVar(&cfg.Ip, "ip", "127.0.0.1", "server ip")
-	flag.IntVar(&cfg.Port, "port", 9627, "server port")
-	flag.StringVar(&cfg.ServerId, "sid", "serverNode_2_1", "server id")
-	flag.StringVar(&cfg.ServerName, "sname", "serverNode_2", "server name")
-	flag.StringVar(&cfg.MAddr, "maddr", "127.0.0.1:9727", "monitor addr")
-	flag.StringVar(&cfg.CAddr, "caddr", "127.0.0.1:8500", "consul addr")
 	flag.IntVar(&stype, "stype", 1, "f1 f2 fall")
 	flag.Parse()
 
@@ -138,14 +131,11 @@ func main() {
 	log.SetConsole(false)
 	// log.SetLevel(log.ALL)
 	log.SetRollingFile("log", "server_log", 10, 5, log.MB)
-	cfg.MInterval = "5s"
-	cfg.MTimeOut = "2s"
-	cfg.DeregisterTime = "20s"
-	cfg.MMethod = "http"
+
 	closeChan := make(chan os.Signal, 1)
 	signal.Notify(closeChan, syscall.SIGTERM)
 
-	err := lbbconsul.GConsulClient.Open(&cfg)
+	err := lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
 	if err != nil {
 		log.Warn("GConsulClient,open err:", err)
 		return
@@ -153,8 +143,8 @@ func main() {
 
 	hello := &Hello{}
 	hello.Init()
-	// s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), hello, 60*time.Second)
-	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", cfg.Ip, cfg.Port), hello, 0)
+	// s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 60*time.Second)
+	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 0)
 	if err != nil {
 		log.Warn("create server err", err)
 		return

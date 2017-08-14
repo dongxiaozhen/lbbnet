@@ -1,7 +1,7 @@
-./ppproxy -sname "ppproxy"      -sid "ppproxy_id_1" -port 8991 -maddr "127.0.0.1:8891"  -fdsvr "server_proxy"
+./fproxy -sname "fproxy"      -sid "fproxy_id_1" -port 8991 -maddr "127.0.0.1:8891"  -fdsvr "server_proxy"
 
-./pproxy  -sname "server_proxy" -sid "proxy_id_1" -port 2222 -maddr "127.0.0.1:2221"  -fdsvr "serverNode_1" 
-./pproxy  -sname "server_proxy" -sid "proxy_id_2" -port 3333 -maddr "127.0.0.1:3331"  -fdsvr "serverNode_2" 
+./mproxy  -sname "server_proxy" -sid "proxy_id_1" -port 2222 -maddr "127.0.0.1:2221"  -fdsvr "serverNode_1" 
+./mproxy  -sname "server_proxy" -sid "proxy_id_2" -port 3333 -maddr "127.0.0.1:3331"  -fdsvr "serverNode_2" 
 ./proxy   -sname "server_proxy" -sid "proxy_id_3" -port 4444 -maddr "127.0.0.1:4441"  -fdsvr "serverNode_3" 
 ./proxy   -sname "server_proxy" -sid "proxy_id_4" -port 5555 -maddr "127.0.0.1:5551"  -fdsvr "serverNode_4" 
 ./proxy   -sname "server_proxy" -sid "proxy_id_5" -port 6666 -maddr "127.0.0.1:6661"  -fdsvr "serverNode_5" 
@@ -16,7 +16,7 @@
 ./server -sname serverNode_5 -sid "serverNode_2_9" -maddr "127.0.0.1:9798" -port 9698  -stype 8
 ./server -sname serverNode_5 -sid "serverNode_2_1" -maddr "127.0.0.1:9718" -port 9618  -stype 9
 
-./client  -sid "client_id_4"  -maddr "127.0.0.1:9431" -tb 1 -ustr "abcdefg"   -fdsvr "ppproxy"
-./client  -sid "client_id_5"  -maddr "127.0.0.1:9432" -tb 3 -ustr "gklmnop"   -fdsvr "ppproxy"
-./client  -sid "client_id_3"  -maddr "127.0.0.1:9430" -tb 5 -ustr "tuvwxyz"   -fdsvr "ppproxy"
-./client  -sid "client_id_6"  -maddr "127.0.0.1:9433" -tb 7 -ustr "tuvwxyz"   -fdsvr "ppproxy"
+./client  -sid "client_id_4"  -maddr "127.0.0.1:9431" -tb 1 -ustr "abcdefg"   -fdsvr "fproxy"
+./client  -sid "client_id_5"  -maddr "127.0.0.1:9432" -tb 3 -ustr "gklmnop"   -fdsvr "fproxy"
+./client  -sid "client_id_3"  -maddr "127.0.0.1:9430" -tb 5 -ustr "tuvwxyz"   -fdsvr "fproxy"
+./client  -sid "client_id_6"  -maddr "127.0.0.1:9433" -tb 7 -ustr "tuvwxyz"   -fdsvr "fproxy"

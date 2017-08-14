@@ -6,7 +6,7 @@ type Protocol interface {
 	OnNetLost(t *Transport)
 }
 
-type PProtocol interface {
+type Manager interface {
 	RemoveServerByAddr(string)
 	AddTServer(string, *TClient)
 	TmpRemoveServerByAddr(string)

@@ -2,6 +2,7 @@ package lbbnet
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbref/goref"
@@ -56,7 +57,7 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 	s.WriteData(data)
 }
 
-func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol, pp PProtocol) {
+func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol, pp Manager) {
 	for k, v := range old {
 		addr := fmt.Sprintf("%s:%d", v.IP, v.Port)
 		if v2, ok := new[k]; ok {
@@ -87,5 +88,24 @@ func CompareDiff(old, new map[string]*lbbconsul.ServiceInfo, pf Protocol, pp PPr
 				pp.AddTServer(addr, t)
 			}
 		}
+	}
+}
+
+func MonitorNet(duration int, foundServer string, sp Protocol, pp Manager) {
+	tick := time.NewTicker(time.Duration(duration) * time.Second)
+	var oldSer = make(map[string]*lbbconsul.ServiceInfo)
+
+	for range tick.C {
+		err := lbbconsul.GConsulClient.DiscoverAliveService(foundServer)
+		if err != nil {
+			log.Warn("discover server err", foundServer)
+			continue
+		}
+		services, ok := lbbconsul.GConsulClient.GetAllService(foundServer)
+		if !ok {
+			log.Warn("not find server err", foundServer)
+		}
+		CompareDiff(oldSer, services, sp, pp)
+		oldSer = services
 	}
 }

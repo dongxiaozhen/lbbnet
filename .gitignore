@@ -12,15 +12,14 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
-example/rpc/rpc
-example/client/client
-example/server/server
-example/proxy/proxy
-example/pproxy/pproxy
-example/ppproxy/ppproxy
-example/fproxy/fproxy
-example/fproxy/log/
-example/mproxy/log/
-example/mproxy/mproxy
-example/proxy/log/
-example/server/log/
+apps/client/client
+apps/fproxy/fproxy
+apps/fproxy/log/
+apps/mproxy/log/
+apps/mproxy/mproxy
+apps/proxy/log/
+apps/proxy/proxy
+apps/rpc/rpc
+apps/server/log/
+apps/server/server
+
