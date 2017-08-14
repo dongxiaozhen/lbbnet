@@ -1,3 +1,11 @@
+1.创建文件目录
+mkdir -p client{1,2,3,4}/log
+mkdir -p server{1,2,3,4,5,6,7,8,9}/log
+mkdir -p proxy{1,2,3}/log
+mkdir -p mproxy{1,2}/log
+mkdir -p fproxy/log
+
+2 启动程序
 ./fproxy -sname "fproxy"      -sid "fproxy_id_1" -port 8991 -maddr "127.0.0.1:8891"  -fdsvr "server_proxy"
 
 ./mproxy  -sname "server_proxy" -sid "proxy_id_1" -port 2222 -maddr "127.0.0.1:2221"  -fdsvr "serverNode_1" 
