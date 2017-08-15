@@ -22,4 +22,4 @@ apps/proxy/proxy
 apps/rpc/rpc
 apps/server/log/
 apps/server/server
-
+apps/sids/sids

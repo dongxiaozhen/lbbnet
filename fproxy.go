@@ -23,7 +23,7 @@ func (h *FCproxy) OnNetLost(t *Transport) {
 func (h *FCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("FCproxy_OnData").Deref()
 
-	if data.PacketType == PTypeRegistServer {
+	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
 		log.Warn("FCp remote get Regist-->", data.Rw.RemoteAddr())
 		PSM.GetServerIds(data)
 		return
@@ -43,7 +43,7 @@ type FSproxy struct {
 }
 
 func (h *FSproxy) registerService(t *Transport) error {
-	p := &NetPacket{PacketType: PTypeRegistServer}
+	p := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
 	return t.WriteData(p)
 }
 func (h *FSproxy) OnNetMade(t *Transport) {
@@ -60,7 +60,7 @@ func (h *FSproxy) OnNetLost(t *Transport) {
 }
 
 func (h *FSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == PTypeRegistServer {
+	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeReply {
 		var ids []uint32
 		if err := json.Unmarshal(data.Data, &ids); err != nil {
 			log.Error("FSP server id not register", data.Rw.RemoteAddr())
@@ -69,7 +69,7 @@ func (h *FSproxy) OnNetData(data *NetPacket) {
 		}
 		PSM.AddServer(data.Rw, ids)
 		return
-	} else if data.PacketType == PTypeReverseRegistServer {
+	} else if data.PacketType == PTypeReverseRegistServer && data.ReqType == MTypeOneWay {
 		err := h.registerService(data.Rw)
 		if err != nil {
 			log.Error("FSP reverse server regist response  register err", data.Rw.RemoteAddr(), err)

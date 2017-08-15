@@ -39,6 +39,7 @@ func (h *NetProcess) f(data *NetPacket) {
 		panic("marshal server ids err")
 	}
 	data.Data = jd
+	data.ReqType = MTypeReply
 	data.Rw.WriteData(data)
 	log.Warn("regist server", string(jd))
 }

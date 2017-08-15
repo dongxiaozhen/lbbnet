@@ -23,7 +23,7 @@ type Hello struct {
 
 func (h *Hello) OnNetMade(t *lbbnet.Transport) {
 	log.Debug("connect mad")
-	p := &lbbnet.NetPacket{UserId: user_id, SessionId: uint32(0), PacketType: uint32(0)}
+	p := &lbbnet.NetPacket{UserId: user_id, SessionId: uint32(0), PacketType: lbbnet.PTypeRegistServer}
 	t.WriteData(p)
 }
 

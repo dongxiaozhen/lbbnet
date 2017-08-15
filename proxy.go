@@ -38,7 +38,7 @@ type Sproxy struct {
 func (h *Sproxy) reverseRegisterService() {
 	log.Warn("SP--------->reverseRegister")
 	for _, t := range CM.GetClients() {
-		p := &NetPacket{PacketType: PTypeReverseRegistServer}
+		p := &NetPacket{PacketType: PTypeReverseRegistServer, ReqType: MTypeOneWay}
 		err := t.WriteData(p)
 		if err != nil {
 			log.Error("SP reverse register server err: s=", t.RemoteAddr(), err)

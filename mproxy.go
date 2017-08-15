@@ -13,7 +13,7 @@ type MSproxy struct {
 func (h *MSproxy) reverseRegisterService() {
 	log.Warn("MSP--------->reverseRegister")
 	for _, t := range CM.GetClients() {
-		p := &NetPacket{PacketType: PTypeReverseRegistServer}
+		p := &NetPacket{PacketType: PTypeReverseRegistServer, ReqType: MTypeOneWay}
 		err := t.WriteData(p)
 		if err != nil {
 			log.Error("reverse register server err: s=", t.RemoteAddr(), err)
@@ -24,7 +24,7 @@ func (h *MSproxy) reverseRegisterService() {
 }
 
 func (h *MSproxy) registerService(t *Transport) error {
-	p := &NetPacket{PacketType: PTypeRegistServer}
+	p := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
 	return t.WriteData(p)
 }
 func (h *MSproxy) OnNetMade(t *Transport) {
@@ -42,7 +42,7 @@ func (h *MSproxy) OnNetLost(t *Transport) {
 }
 
 func (h *MSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == PTypeRegistServer {
+	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeReply {
 		var ids []uint32
 		if err := json.Unmarshal(data.Data, &ids); err != nil {
 			log.Error("MSP server id not register", data.Rw.RemoteAddr())
@@ -78,7 +78,7 @@ func (h *MCproxy) OnNetLost(t *Transport) {
 func (h *MCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("MCP_OnData").Deref()
 
-	if data.PacketType == PTypeRegistServer {
+	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
 		log.Warn("MCP get register packet", data.Rw.RemoteAddr())
 		PSM.GetServerIds(data)
 		return
