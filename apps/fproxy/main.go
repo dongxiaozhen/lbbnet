@@ -12,14 +12,19 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
-var foundServer string
-var sproxy = &lbbnet.FSproxy{}
-var cproxy = &lbbnet.FCproxy{}
-
 func main() {
+	var (
+		foundServer string
+		agentId     int
+	)
 	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
+	flag.IntVar(&agentId, "agentId", 1, "agent id")
 	flag.Parse()
 
+	var (
+		sproxy = &lbbnet.FSproxy{}
+		cproxy = &lbbnet.FCproxy{Agent: uint32(agentId)}
+	)
 	log.SetLevel(log.WARN)
 	// log.SetLevel(log.ALL)
 	log.SetConsole(false)

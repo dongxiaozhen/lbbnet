@@ -8,6 +8,7 @@ import (
 )
 
 type FCproxy struct {
+	Agent uint32
 }
 
 func (h *FCproxy) OnNetMade(t *Transport) {
@@ -22,6 +23,7 @@ func (h *FCproxy) OnNetLost(t *Transport) {
 
 func (h *FCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("FCproxy_OnData").Deref()
+	data.Agent = h.Agent
 
 	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
 		log.Warn("FCp remote get Regist-->", data.Rw.RemoteAddr())
