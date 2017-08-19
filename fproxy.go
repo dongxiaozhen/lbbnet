@@ -9,6 +9,7 @@ import (
 
 type FCproxy struct {
 	Agent uint32
+	*SessionManager
 }
 
 func (h *FCproxy) OnNetMade(t *Transport) {
@@ -30,6 +31,21 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 		PSM.GetServerIds(data)
 		return
 	}
+	// login,logout judge
+	if h.Exist(data.UserId) {
+		if data.PacketType == PTypeLogout {
+			// logout
+			h.Del(data.UserId)
+		}
+	} else {
+		if data.PacketType == PTypeLogin {
+			h.Set(data.UserId, data.Rw)
+		} else {
+			// not login
+			return
+		}
+	}
+
 	id := CM.GetClient(data.Rw)
 	data.From1 = uint32(id)
 

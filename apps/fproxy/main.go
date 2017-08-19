@@ -21,10 +21,9 @@ func main() {
 	flag.IntVar(&agentId, "agentId", 1, "agent id")
 	flag.Parse()
 
-	var (
-		sproxy = &lbbnet.FSproxy{}
-		cproxy = &lbbnet.FCproxy{Agent: uint32(agentId)}
-	)
+	var sproxy = &lbbnet.FSproxy{}
+	var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
+
 	log.SetLevel(log.WARN)
 	// log.SetLevel(log.ALL)
 	log.SetConsole(false)
