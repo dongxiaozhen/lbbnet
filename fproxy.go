@@ -30,7 +30,23 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 		log.Warn("FCp remote get Regist-->", data.Rw.RemoteAddr())
 		PSM.GetServerIds(data)
 		return
+	} else if data.PacketType == PTypeRoute {
+		ptype := data.GetRouteInfo()
+		if ptype == 0 {
+			return
+		}
+		client := PSM.GetServer(data.UserId, ptype)
+		if client == nil {
+			log.Warn("FCp get client emtpy", data.UserId, ptype)
+			data.Data, _ = json.Marshal("not find route")
+			data.ReqType = MTypeReply
+			data.Rw.WriteData(data)
+			return
+		}
+		client.WriteData(data)
+		return
 	}
+
 	// login,logout judge
 	if h.Exist(data.UserId) {
 		if data.PacketType == PTypeLogout {
@@ -58,6 +74,7 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 }
 
 type FSproxy struct {
+	ServerInfo string
 }
 
 func (h *FSproxy) registerService(t *Transport) error {
@@ -93,6 +110,11 @@ func (h *FSproxy) OnNetData(data *NetPacket) {
 			log.Error("FSP reverse server regist response  register err", data.Rw.RemoteAddr(), err)
 		}
 		return
+	} else if data.PacketType == PTypeRoute {
+		buf := make([]byte, 0, len(h.ServerInfo)+len(data.Data))
+		buf = append(buf, h.ServerInfo...)
+		buf = append(buf, data.Data...)
+		data.Data = buf
 	}
 	s := CM.GetClientById(data.From1)
 	if s == nil {

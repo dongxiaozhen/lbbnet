@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -20,10 +21,13 @@ func main() {
 	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
 	flag.IntVar(&agentId, "agentId", 1, "agent id")
 	flag.Parse()
+	sj, err := json.Marshal(lbbconsul.Ccfg)
+	if err != nil {
+		return
+	}
 
-	var sproxy = &lbbnet.FSproxy{}
+	var sproxy = &lbbnet.FSproxy{ServerInfo: string(sj)}
 	var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
-
 	log.SetLevel(log.WARN)
 	// log.SetLevel(log.ALL)
 	log.SetConsole(false)

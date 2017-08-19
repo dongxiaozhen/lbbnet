@@ -87,3 +87,13 @@ func (t *NetPacket) Serialize() []byte {
 	copy(buf[LenOfPacket:], t.Data)
 	return buf
 }
+
+func (t *NetPacket) GetRouteInfo() uint32 {
+	if t == nil {
+		return 0
+	}
+	if len(t.Data[LenOfPacket:]) != 4 {
+		return 0
+	}
+	return binary.LittleEndian.Uint32(t.Data[LenOfPacket:])
+}

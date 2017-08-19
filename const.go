@@ -2,6 +2,7 @@ package lbbnet
 
 // package  type
 const PTypeRegistServer uint32 = 0
+const PTypeRoute uint32 = 1
 
 const PTypeLogin uint32 = 10
 const PTypeLogout uint32 = 11
