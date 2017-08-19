@@ -9,10 +9,11 @@ import (
 )
 
 type NetProcess struct {
-	close bool
+	// close bool
 	task  *WorkTask
 	mp    map[uint32]func(*NetPacket)
 	defun func(*NetPacket)
+	tr    *Transport
 }
 
 func (h *NetProcess) Init() {
@@ -67,10 +68,10 @@ func (h *NetProcess) OnNetLost(t *Transport) {
 
 func (h *NetProcess) OnNetData(data *NetPacket) {
 	log.Debug("NetProcess ondata", data.PacketType, data.UserId)
-	if h.close {
-		log.Debug("process close", *data)
-		return
-	}
+	// if h.close {
+	// log.Debug("process close", *data)
+	// return
+	// }
 
 	hander := h.getHandler(data.PacketType)
 	if hander == nil {
@@ -91,6 +92,6 @@ func (h *NetProcess) getHandler(packetType uint32) func(*NetPacket) {
 }
 
 func (h *NetProcess) Close() {
-	h.close = true
+	// h.close = true
 	h.task.Stop()
 }
