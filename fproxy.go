@@ -3,8 +3,8 @@ package lbbnet
 import (
 	"encoding/json"
 
+	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
-	"github.com/mreithub/goref"
 )
 
 type FCproxy struct {
@@ -29,21 +29,6 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
 		log.Warn("FCp remote get Regist-->", data.Rw.RemoteAddr())
 		PSM.GetServerIds(data)
-		return
-	} else if data.PacketType == PTypeRoute {
-		ptype := data.GetRouteInfo()
-		if ptype == 0 {
-			return
-		}
-		client := PSM.GetServer(data.UserId, ptype)
-		if client == nil {
-			log.Warn("FCp get client emtpy", data.UserId, ptype)
-			data.Data, _ = json.Marshal("not find route")
-			data.ReqType = MTypeReply
-			data.Rw.WriteData(data)
-			return
-		}
-		client.WriteData(data)
 		return
 	}
 
@@ -74,7 +59,7 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 }
 
 type FSproxy struct {
-	ServerInfo string
+	ServerInfo []byte
 }
 
 func (h *FSproxy) registerService(t *Transport) error {
@@ -110,7 +95,7 @@ func (h *FSproxy) OnNetData(data *NetPacket) {
 			log.Error("FSP reverse server regist response  register err", data.Rw.RemoteAddr(), err)
 		}
 		return
-	} else if data.PacketType == PTypeRoute {
+	} else if data.ReqType == MTypeRoute {
 		buf := make([]byte, 0, len(h.ServerInfo)+len(data.Data))
 		buf = append(buf, h.ServerInfo...)
 		buf = append(buf, data.Data...)

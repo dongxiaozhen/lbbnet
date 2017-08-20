@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -12,11 +13,8 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
-var foundServer string
-var sproxy = &lbbnet.MSproxy{}
-var cproxy = &lbbnet.MCproxy{}
-
 func main() {
+	var foundServer string
 	flag.StringVar(&foundServer, "fdsvr", "serverNode_2", "found server name")
 	flag.Parse()
 
@@ -27,9 +25,15 @@ func main() {
 
 	exist := make(chan os.Signal, 1)
 	signal.Notify(exist, syscall.SIGTERM)
-	// SM = newServerManager()
 
-	err := lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
+	sj, err := json.Marshal(lbbconsul.Ccfg)
+	if err != nil {
+		return
+	}
+	var sproxy = &lbbnet.MSproxy{ServerInfo: sj}
+	var cproxy = &lbbnet.MCproxy{}
+
+	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
 	if err != nil {
 		log.Warn("open return", err)
 		return

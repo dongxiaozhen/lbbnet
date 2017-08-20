@@ -76,18 +76,36 @@ func (p *Rpc) OnNetData(t *NetPacket) {
 	}
 	log.Debug("not find seqid", t.SeqId)
 }
+func (p *Rpc) Route(packType uint32, userId uint64) (*NetPacket, error) {
+	t := &NetPacket{UserId: userId, PacketType: packType, ReqType: MTypeRoute}
+	return p.call(t)
+}
 
 func (p *Rpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, error) {
+	t := &NetPacket{UserId: userId, PacketType: packType, Data: data}
+	return p.call(t)
+}
+
+func (p *Rpc) Login(userId uint64) (*NetPacket, error) {
+	t := &NetPacket{UserId: userId, PacketType: PTypeLogin}
+	return p.call(t)
+}
+
+func (p *Rpc) Logout(userId uint64) (*NetPacket, error) {
+	t := &NetPacket{UserId: userId, PacketType: PTypeLogout}
+	return p.call(t)
+}
+
+func (p *Rpc) call(t *NetPacket) (*NetPacket, error) {
 	ret := &RpcRet{c: make(chan *NetPacket, 1)}
 
 	p.Lock()
 	p.seq++
 	p.mp[p.seq] = ret
+	t.SeqId = p.seq
 	p.Unlock()
 
-	log.Debug("--------1---data", string(data))
-	t := &NetPacket{UserId: userId, PacketType: packType, SeqId: p.seq, Data: data}
-	log.Debug("--------1---data", string(data), *t, string(t.Data))
+	log.Debug("--------1---data", *t)
 	err := p.t.Send(t)
 	if err != nil {
 		log.Warn("send err", err)

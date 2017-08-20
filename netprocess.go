@@ -10,10 +10,11 @@ import (
 
 type NetProcess struct {
 	// close bool
-	task  *WorkTask
-	mp    map[uint32]func(*NetPacket)
-	defun func(*NetPacket)
-	tr    *Transport
+	task       *WorkTask
+	mp         map[uint32]func(*NetPacket)
+	defun      func(*NetPacket)
+	tr         *Transport
+	ServerInfo []byte
 }
 
 func (h *NetProcess) Init() {
@@ -72,6 +73,11 @@ func (h *NetProcess) OnNetData(data *NetPacket) {
 	// log.Debug("process close", *data)
 	// return
 	// }
+	if data.ReqType == MTypeRoute {
+		data.Data = h.ServerInfo
+		data.Rw.WriteData(data)
+		return
+	}
 
 	hander := h.getHandler(data.PacketType)
 	if hander == nil {

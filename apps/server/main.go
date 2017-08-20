@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -34,10 +35,21 @@ func (h *Hello) Init() {
 		h.RegisterFunc(6, ff)
 	} else if stype == 7 {
 		h.RegisterFunc(7, fg)
+	} else if stype == 10 {
+		h.RegisterFunc(10, login)
+		h.RegisterFunc(11, logout)
 	} else {
 		h.RegisterFunc(8, fh)
 		h.RegisterFunc(9, fi)
 	}
+}
+func login(data *lbbnet.NetPacket) {
+	data.Data = []byte("login success")
+	data.Rw.WriteData(data)
+}
+func logout(data *lbbnet.NetPacket) {
+	data.Data = []byte("logout success")
+	data.Rw.WriteData(data)
 }
 
 func fa(data *lbbnet.NetPacket) {
@@ -140,8 +152,12 @@ func main() {
 		log.Warn("GConsulClient,open err:", err)
 		return
 	}
+	sj, err := json.Marshal(lbbconsul.Ccfg)
+	if err != nil {
+		return
+	}
 
-	hello := &Hello{}
+	hello := &Hello{NetProcess: lbbnet.NetProcess{ServerInfo: sj}}
 	hello.Init()
 	// s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 60*time.Second)
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 0)

@@ -206,6 +206,7 @@ func (c *PServerManager) GetServerIds(data *NetPacket) {
 		return
 	}
 	log.Warn("regist server id", data.Rw.RemoteAddr(), string(data.Data))
+	data.ReqType = MTypeReply
 	data.Rw.WriteData(data)
 }
 

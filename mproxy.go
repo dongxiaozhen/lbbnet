@@ -3,11 +3,12 @@ package lbbnet
 import (
 	"encoding/json"
 
+	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
-	"github.com/mreithub/goref"
 )
 
 type MSproxy struct {
+	ServerInfo []byte
 }
 
 func (h *MSproxy) reverseRegisterService() {
@@ -53,7 +54,13 @@ func (h *MSproxy) OnNetData(data *NetPacket) {
 		// 反向注册
 		h.reverseRegisterService()
 		return
+	} else if data.ReqType == MTypeRoute {
+		buf := make([]byte, 0, len(h.ServerInfo)+len(data.Data))
+		buf = append(buf, h.ServerInfo...)
+		buf = append(buf, data.Data...)
+		data.Data = buf
 	}
+
 	s := CM.GetClientById(data.From2)
 	if s == nil {
 		log.Warn("MSproxy client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)

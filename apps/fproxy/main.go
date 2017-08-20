@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	var sproxy = &lbbnet.FSproxy{ServerInfo: string(sj)}
+	var sproxy = &lbbnet.FSproxy{ServerInfo: sj}
 	var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
 	log.SetLevel(log.WARN)
 	// log.SetLevel(log.ALL)
@@ -35,9 +35,8 @@ func main() {
 
 	exist := make(chan os.Signal, 1)
 	signal.Notify(exist, syscall.SIGTERM)
-	// SM = newServerManager()
 
-	err := lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
+	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
 	if err != nil {
 		log.Warn("open return", err)
 		return
