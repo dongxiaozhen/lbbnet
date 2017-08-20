@@ -33,6 +33,7 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 }
 
 type Sproxy struct {
+	ServerInfo []byte
 }
 
 func (h *Sproxy) reverseRegisterService() {
@@ -61,6 +62,12 @@ func (h *Sproxy) OnNetLost(t *Transport) {
 }
 
 func (h *Sproxy) OnNetData(data *NetPacket) {
+	if data.ReqType == MTypeRoute {
+		buf := make([]byte, 0, len(h.ServerInfo)+len(data.Data))
+		buf = append(buf, h.ServerInfo...)
+		buf = append(buf, data.Data...)
+		data.Data = buf
+	}
 	s := CM.GetClientById(data.From2)
 	if s == nil {
 		return
