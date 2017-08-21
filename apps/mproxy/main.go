@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -26,18 +25,8 @@ func main() {
 	exist := make(chan os.Signal, 1)
 	signal.Notify(exist, syscall.SIGTERM)
 
-	sj, err := json.Marshal(lbbconsul.Ccfg)
-	if err != nil {
-		return
-	}
-	var sproxy = &lbbnet.MSproxy{ServerInfo: sj}
+	var sproxy = &lbbnet.MSproxy{ServerInfo: lbbconsul.GetConsulInfo()}
 	var cproxy = &lbbnet.MCproxy{}
-
-	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
-	if err != nil {
-		log.Warn("open return", err)
-		return
-	}
 
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), cproxy, 0)
 	if err != nil {
@@ -45,9 +34,15 @@ func main() {
 		return
 	}
 
+	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
+	if err != nil {
+		log.Warn("open return", err)
+		return
+	}
+
 	go lbbnet.MonitorNet(2, foundServer, sproxy, lbbnet.PSM)
 
 	<-exist
-	s.Close()
 	lbbconsul.GConsulClient.Close()
+	s.Close()
 }

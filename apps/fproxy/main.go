@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -21,13 +20,7 @@ func main() {
 	flag.StringVar(&foundServer, "fdsvr", "server_proxy", "found server name")
 	flag.IntVar(&agentId, "agentId", 1, "agent id")
 	flag.Parse()
-	sj, err := json.Marshal(lbbconsul.Ccfg)
-	if err != nil {
-		return
-	}
 
-	var sproxy = &lbbnet.FSproxy{ServerInfo: sj}
-	var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
 	log.SetLevel(log.WARN)
 	// log.SetLevel(log.ALL)
 	log.SetConsole(false)
@@ -36,15 +29,17 @@ func main() {
 	exist := make(chan os.Signal, 1)
 	signal.Notify(exist, syscall.SIGTERM)
 
-	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
-	if err != nil {
-		log.Warn("open return", err)
-		return
-	}
-
+	var sproxy = &lbbnet.FSproxy{ServerInfo: lbbconsul.GetConsulInfo()}
+	var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), cproxy, 0)
 	if err != nil {
 		log.Warn("create server err", err)
+		return
+	}
+
+	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
+	if err != nil {
+		log.Warn("open return", err)
 		return
 	}
 

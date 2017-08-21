@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -147,22 +146,18 @@ func main() {
 	closeChan := make(chan os.Signal, 1)
 	signal.Notify(closeChan, syscall.SIGTERM)
 
-	err := lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
-	if err != nil {
-		log.Warn("GConsulClient,open err:", err)
-		return
-	}
-	sj, err := json.Marshal(lbbconsul.Ccfg)
-	if err != nil {
-		return
-	}
-
-	hello := &Hello{NetProcess: lbbnet.NetProcess{ServerInfo: sj}}
+	hello := &Hello{NetProcess: lbbnet.NetProcess{ServerInfo: lbbconsul.GetConsulInfo()}}
 	hello.Init()
 	// s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 60*time.Second)
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 0)
 	if err != nil {
 		log.Warn("create server err", err)
+		return
+	}
+
+	err = lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
+	if err != nil {
+		log.Warn("GConsulClient,open err:", err)
 		return
 	}
 
