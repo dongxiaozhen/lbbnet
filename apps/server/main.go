@@ -3,11 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
 	"syscall"
 
 	"github.com/dongxiaozhen/lbbconsul"
+	"github.com/dongxiaozhen/lbbutil"
 
 	"github.com/dongxiaozhen/lbbnet"
 	"github.com/dongxiaozhen/lbbref/goref"
@@ -143,9 +142,6 @@ func main() {
 	// log.SetLevel(log.ALL)
 	log.SetRollingFile("log", "server_log", 10, 5, log.MB)
 
-	closeChan := make(chan os.Signal, 1)
-	signal.Notify(closeChan, syscall.SIGTERM)
-
 	hello := &Hello{NetProcess: lbbnet.NetProcess{ServerInfo: lbbconsul.GetConsulInfo()}}
 	hello.Init()
 	// s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), hello, 60*time.Second)
@@ -161,11 +157,12 @@ func main() {
 		return
 	}
 
-	<-closeChan
-	//deregister
-	lbbconsul.GConsulClient.Close()
-	// close listern
-	s.Close()
-	// not hander new data, wait all done
-	hello.Close()
+	lbbutil.RegistSignal(func() {
+		//deregister
+		lbbconsul.GConsulClient.Close()
+		// close listern
+		s.Close()
+		// not hander new data, wait all done
+		hello.Close()
+	}, syscall.SIGTERM)
 }

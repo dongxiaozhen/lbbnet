@@ -3,12 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
 	"syscall"
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbnet"
+	"github.com/dongxiaozhen/lbbutil"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
@@ -21,9 +20,6 @@ func main() {
 	log.SetConsole(false)
 	// log.SetLevel(log.ALL)
 	log.SetRollingFile("log", "proxy", 10, 5, log.MB)
-
-	exist := make(chan os.Signal, 1)
-	signal.Notify(exist, syscall.SIGTERM)
 
 	var sproxy = &lbbnet.Sproxy{ServerInfo: lbbconsul.GetConsulInfo()}
 	var cproxy = &lbbnet.Cproxy{}
@@ -42,7 +38,8 @@ func main() {
 
 	go lbbnet.MonitorNet(2, foundServer, sproxy, lbbnet.SM)
 
-	<-exist
-	lbbconsul.GConsulClient.Close()
-	s.Close()
+	lbbutil.RegistSignal(func() {
+		lbbconsul.GConsulClient.Close()
+		s.Close()
+	}, syscall.SIGTERM)
 }

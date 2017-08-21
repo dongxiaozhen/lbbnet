@@ -3,12 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/dongxiaozhen/lbbconsul"
+	"github.com/dongxiaozhen/lbbutil"
 
 	"github.com/dongxiaozhen/lbbnet"
 	log "github.com/donnie4w/go-logger/logger"
@@ -64,8 +63,7 @@ func main() {
 	log.SetConsole(false)
 	log.SetRollingFile("log", "client", 10, 5, log.MB)
 
-	closeChan := make(chan os.Signal, 1)
-	signal.Notify(closeChan, syscall.SIGTERM)
+	exit := lbbutil.MakeSignal(syscall.SIGTERM)
 
 	err := lbbconsul.GConsulClient.Open(&lbbconsul.Ccfg)
 	if err != nil {
@@ -92,7 +90,7 @@ func main() {
 		}
 	}
 
-	<-closeChan
+	<-exit
 	lbbconsul.GConsulClient.Close()
 	hello.Close()
 	// t.Close()

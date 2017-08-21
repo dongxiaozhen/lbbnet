@@ -95,6 +95,10 @@ func (p *Rpc) Logout(userId uint64) (*NetPacket, error) {
 	t := &NetPacket{UserId: userId, PacketType: PTypeLogout}
 	return p.call(t)
 }
+func (p *Rpc) Servers() (*NetPacket, error) {
+	t := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
+	return p.call(t)
+}
 
 func (p *Rpc) call(t *NetPacket) (*NetPacket, error) {
 	ret := &RpcRet{c: make(chan *NetPacket, 1)}
