@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"syscall"
+	"time"
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbutil"
@@ -19,26 +20,28 @@ type Hello struct {
 
 func (h *Hello) Init() {
 	h.NetProcess.Init()
-	if stype == 1 {
-		h.RegisterFunc(1, fa)
-	} else if stype == 2 {
-		h.RegisterFunc(2, fb)
-	} else if stype == 3 {
-		h.RegisterFunc(3, fc)
-	} else if stype == 4 {
-		h.RegisterFunc(4, fd)
-	} else if stype == 5 {
-		h.RegisterFunc(5, fe)
-	} else if stype == 6 {
-		h.RegisterFunc(6, ff)
-	} else if stype == 7 {
-		h.RegisterFunc(7, fg)
+	if stype == 101 {
+		h.RegisterFunc(101, fa)
+	} else if stype == 102 {
+		h.RegisterFunc(102, fb)
+	} else if stype == 103 {
+		h.RegisterFunc(103, fc)
+	} else if stype == 104 {
+		h.RegisterFunc(104, fd)
+	} else if stype == 105 {
+		h.RegisterFunc(105, fe)
+	} else if stype == 106 {
+		h.RegisterFunc(106, ff)
+	} else if stype == 107 {
+		h.RegisterFunc(107, fg)
 	} else if stype == 10 {
 		h.RegisterFunc(10, login)
 		h.RegisterFunc(11, logout)
+		h.RegisterFunc(108, h.fh)
+		h.RegisterFunc(109, h.fi)
 	} else {
-		h.RegisterFunc(8, fh)
-		h.RegisterFunc(9, fi)
+		h.RegisterFunc(108, h.fh)
+		h.RegisterFunc(109, h.fi)
 	}
 }
 func login(data *lbbnet.NetPacket) {
@@ -106,21 +109,31 @@ func fg(data *lbbnet.NetPacket) {
 	data.Data = []byte(tmp)
 	data.Rw.WriteData(data)
 }
-func fh(data *lbbnet.NetPacket) {
+func (h *Hello) fh(data *lbbnet.NetPacket) {
 	defer goref.Ref("fh").Deref()
 	suf := fmt.Sprintf("fh %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
-	data.Rw.WriteData(data)
+	err := data.Rw.WriteData(data)
+	if err == lbbnet.ErrTransportClose {
+		h.Down(data)
+	} else {
+		time.Sleep(1000 * time.Millisecond)
+	}
 }
-func fi(data *lbbnet.NetPacket) {
+func (h *Hello) fi(data *lbbnet.NetPacket) {
 	defer goref.Ref("fi").Deref()
 	suf := fmt.Sprintf("fi %d,%d,%d,%d,seqid %d,%d  <--", data.PacketType, data.UserId, data.From1, data.From2, data.SeqId, lbbconsul.Ccfg.Port)
 	tmp := suf + string(data.Data)
 	log.Debug(tmp)
 	data.Data = []byte(tmp)
-	data.Rw.WriteData(data)
+	err := data.Rw.WriteData(data)
+	if err == lbbnet.ErrTransportClose {
+		h.Down(data)
+	} else {
+		time.Sleep(1000 * time.Millisecond)
+	}
 }
 func fj(data *lbbnet.NetPacket) {
 	defer goref.Ref("fj").Deref()
@@ -138,7 +151,7 @@ func main() {
 	flag.Parse()
 
 	log.SetLevel(log.WARN)
-	log.SetConsole(false)
+	log.SetConsole(true)
 	// log.SetLevel(log.ALL)
 	log.SetRollingFile("log", "server_log", 10, 5, log.MB)
 

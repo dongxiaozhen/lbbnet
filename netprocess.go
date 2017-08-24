@@ -3,28 +3,61 @@ package lbbnet
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/dongxiaozhen/lbbsort"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
+var ErrFuncFind = errors.New("函数已经注册")
+
 type NetProcess struct {
-	// close bool
+	close      bool
 	task       *WorkTask
 	mp         map[uint32]func(*NetPacket)
 	defun      func(*NetPacket)
 	tr         *Transport
 	ServerInfo []byte
+	ids        map[string]*Transport
+	DownQueue  chan *NetPacket
 }
 
 func (h *NetProcess) Init() {
 	h.task = NewWorkTask(10, 100)
 	h.mp = make(map[uint32]func(*NetPacket))
+	h.ids = make(map[string]*Transport)
+	h.DownQueue = make(chan *NetPacket, 1000)
 	h.RegisterServer()
+	go h.runDown()
 	h.task.Run()
 }
 
-var ErrFuncFind = errors.New("函数已经注册")
+func (h *NetProcess) Down(data *NetPacket) {
+	log.Warn("lbb down queue", data.PacketType, data.SeqId, data.UserId, data.From1, data.From2)
+	h.DownQueue <- data
+}
+
+func (h *NetProcess) runDown() {
+	for {
+		ls := len(h.DownQueue)
+		if ls == 0 {
+			time.Sleep(time.Second)
+			continue
+		}
+		time.Sleep(6 * time.Second)
+		for i := 0; i < ls; i++ {
+			d := <-h.DownQueue
+			trp, ok := h.ids[d.Rw.GetRemoteId()]
+			if ok {
+				log.Warn("lbb down queue second_send ", d.PacketType, d.SeqId, d.UserId, d.From1, d.From2)
+				trp.WriteData(d)
+			} else {
+				log.Error("discard down queue net data ", d.From1, d.From2, d.PacketType, d.Agent, string(d.Data))
+			}
+		}
+		time.Sleep(2 * time.Second)
+	}
+}
 
 func (h *NetProcess) RegisterServer() {
 	h.RegisterFunc(PTypeRegistServer, h.f)
@@ -65,6 +98,8 @@ func (h *NetProcess) OnNetMade(t *Transport) {
 
 func (h *NetProcess) OnNetLost(t *Transport) {
 	log.Warn("NetProcess lost ", t.RemoteAddr())
+	sid := t.GetRemoteId()
+	delete(h.ids, sid)
 }
 
 func (h *NetProcess) OnNetData(data *NetPacket) {
@@ -73,6 +108,12 @@ func (h *NetProcess) OnNetData(data *NetPacket) {
 	// log.Debug("process close", *data)
 	// return
 	// }
+	if data.PacketType == PTypeNotifyServer && data.ReqType == MTypeOneWay {
+		data.Rw.SetRemoteId(string(data.Data))
+		h.ids[string(data.Data)] = data.Rw
+		log.Warn("add notify server id", string(data.Data))
+		return
+	}
 	if data.ReqType == MTypeRoute {
 		data.Data = h.ServerInfo
 		data.Rw.WriteData(data)
@@ -100,4 +141,5 @@ func (h *NetProcess) getHandler(packetType uint32) func(*NetPacket) {
 func (h *NetProcess) Close() {
 	// h.close = true
 	h.task.Stop()
+	close(h.DownQueue)
 }

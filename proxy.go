@@ -10,7 +10,6 @@ type Cproxy struct {
 
 func (h *Cproxy) OnNetMade(t *Transport) {
 	log.Debug("CP made net ", t.RemoteAddr())
-	CM.AddClient(t)
 }
 
 func (h *Cproxy) OnNetLost(t *Transport) {
@@ -19,10 +18,16 @@ func (h *Cproxy) OnNetLost(t *Transport) {
 }
 
 func (h *Cproxy) OnNetData(data *NetPacket) {
+	defer goref.Ref("proxy").Deref()
+
+	if data.PacketType == PTypeNotifyServer && data.ReqType == MTypeOneWay {
+		data.Rw.SetRemoteId(string(data.Data))
+		CM.AddClient(data.Rw)
+		return
+	}
+
 	id := CM.GetClient(data.Rw)
 	data.From2 = uint32(id)
-
-	defer goref.Ref("proxy").Deref()
 
 	client := SM.GetServer(data.UserId)
 	if client == nil {
@@ -34,6 +39,7 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 
 type Sproxy struct {
 	ServerInfo []byte
+	ServerId   string
 }
 
 func (h *Sproxy) reverseRegisterService() {
@@ -49,9 +55,18 @@ func (h *Sproxy) reverseRegisterService() {
 	}
 }
 
+func (h *Sproxy) registerServiceId(t *Transport) error {
+	p1 := &NetPacket{PacketType: PTypeNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
+	return t.WriteData(p1)
+}
+
 func (h *Sproxy) OnNetMade(t *Transport) {
 	log.Warn("SP made---------> ", t.RemoteAddr())
 	SM.AddServer(t)
+	err := h.registerServiceId(t)
+	if err != nil {
+		log.Error("SP send server register", t.RemoteAddr())
+	}
 	h.reverseRegisterService()
 }
 

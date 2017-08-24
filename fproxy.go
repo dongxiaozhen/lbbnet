@@ -2,6 +2,7 @@ package lbbnet
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
@@ -14,7 +15,6 @@ type FCproxy struct {
 
 func (h *FCproxy) OnNetMade(t *Transport) {
 	log.Debug("FCP-------------s made net")
-	CM.AddClient(t)
 }
 
 func (h *FCproxy) OnNetLost(t *Transport) {
@@ -41,6 +41,8 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 	} else {
 		if data.PacketType == PTypeLogin {
 			h.Set(data.UserId, data.Rw)
+			data.Rw.SetRemoteId(fmt.Sprintf("%d", data.UserId))
+			CM.AddClient(data.Rw)
 		} else {
 			// not login
 			return
@@ -60,10 +62,13 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 
 type FSproxy struct {
 	ServerInfo []byte
+	ServerId   string
 }
 
 func (h *FSproxy) registerService(t *Transport) error {
+	p1 := &NetPacket{PacketType: PTypeNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
 	p := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
+	t.WriteData(p1)
 	return t.WriteData(p)
 }
 func (h *FSproxy) OnNetMade(t *Transport) {

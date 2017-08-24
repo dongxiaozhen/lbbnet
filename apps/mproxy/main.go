@@ -18,10 +18,10 @@ func main() {
 
 	log.SetLevel(log.WARN)
 	// log.SetLevel(log.ALL)
-	log.SetConsole(false)
+	log.SetConsole(true)
 	log.SetRollingFile("log", "mproxy", 10, 5, log.MB)
 
-	var sproxy = &lbbnet.MSproxy{ServerInfo: lbbconsul.GetConsulInfo()}
+	var sproxy = &lbbnet.MSproxy{ServerId: lbbconsul.GetConsulServerId(), ServerInfo: lbbconsul.GetConsulInfo()}
 	var cproxy = &lbbnet.MCproxy{}
 
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), cproxy, 0)
@@ -41,5 +41,6 @@ func main() {
 	lbbutil.RegistSignal(func() {
 		lbbconsul.GConsulClient.Close()
 		s.Close()
+		lbbnet.CM.Free()
 	}, syscall.SIGTERM)
 }

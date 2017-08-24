@@ -19,6 +19,7 @@ type Transport struct {
 	readChan  chan []byte
 	writeChan chan []byte
 	close     bool
+	remoteId  string
 	sync.RWMutex
 	sync.WaitGroup
 }
@@ -60,9 +61,18 @@ func NewTransport(con *net.TCPConn, timeout time.Duration) *Transport {
 	return &Transport{con: &TSocket{con, timeout}, readChan: make(chan []byte, 10), writeChan: make(chan []byte, 10)}
 }
 
+func (c *Transport) SetRemoteId(id string) {
+	c.remoteId = id
+}
+
+func (c *Transport) GetRemoteId() string {
+	return c.remoteId
+}
+
 func (c *Transport) RemoteAddr() string {
 	return c.con.RemoteAddr()
 }
+
 func (t *Transport) ReadData() *NetPacket {
 	s, ok := <-t.readChan
 	if !ok {

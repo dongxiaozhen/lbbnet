@@ -3,6 +3,8 @@ package lbbnet
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/dongxiaozhen/lbbref/goref"
@@ -17,13 +19,55 @@ var SM = NewServerManager()
 type ClientManager struct {
 	seq     uint32
 	clients map[*Transport]uint32
+	ids     map[string]uint32
 	sync.RWMutex
 }
 
 func NewClientManager() *ClientManager {
-	return &ClientManager{
-		seq:     0,
+	c := &ClientManager{
+		seq:     10,
 		clients: make(map[*Transport]uint32),
+	}
+
+	f, err := os.Open("clientManager.txt")
+	if err == nil {
+		data, err := ioutil.ReadAll(f)
+		if err == nil {
+			err = json.Unmarshal(data, &c.ids)
+			if err == nil {
+				c.seq = c.ids["seq"]
+				delete(c.ids, "seq")
+				return c
+			} else {
+				log.Error("unmarshal data err", err)
+			}
+		} else {
+			log.Error("read file err", err)
+		}
+
+	} else {
+		log.Error("open clientManager.txt err", err)
+	}
+	c.ids = make(map[string]uint32)
+	return c
+}
+
+func (s *ClientManager) Free() {
+	s.ids["seq"] = seq
+	data, err := json.Marshal(s.ids)
+	if err != nil {
+		log.Error("Marsha clientManager ids err", err)
+		return
+	}
+	file, err := os.OpenFile("clientManager.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		log.Error("open file err ", err)
+		return
+	}
+	n, err := file.Write(data)
+	if err != nil || n != len(data) {
+		log.Error("write file err ", err)
+		return
 	}
 }
 
@@ -37,8 +81,20 @@ func (s *ClientManager) RemoveClient(t *Transport) {
 func (s *ClientManager) AddClient(conn *Transport) {
 	s.Lock()
 	defer s.Unlock()
-	s.seq++
-	s.clients[conn] = s.seq
+	rsid := conn.GetRemoteId()
+	if rsid == "" {
+		log.Error("ClientManager AddClient err: not set remote id-->", conn.RemoteAddr())
+		return
+	}
+	if sid, ok := s.ids[rsid]; ok {
+		s.clients[conn] = sid
+		log.Warn("ClientManager AddClient remote sid-->", conn.RemoteAddr(), rsid, sid)
+	} else {
+		s.seq++
+		s.clients[conn] = s.seq
+		s.ids[rsid] = s.seq
+		log.Warn("ClientManager AddClient remote sid-->", conn.RemoteAddr(), rsid, s.seq)
+	}
 }
 
 func (s *ClientManager) GetClient(t *Transport) uint32 {

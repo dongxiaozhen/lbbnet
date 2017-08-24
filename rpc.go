@@ -20,7 +20,7 @@ type RpcRet struct {
 
 func (p *RpcRet) GetReply() (r *NetPacket, err error) {
 	c := make(chan bool, 1)
-	job, _ := gclock.AddJobWithInterval(3*time.Second, func() {
+	job, _ := gclock.AddJobWithInterval(10*time.Second, func() {
 		c <- true
 	})
 
