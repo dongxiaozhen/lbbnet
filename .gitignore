@@ -24,3 +24,7 @@ apps/server/log/
 apps/server/server
 apps/sids/sids
 apps/route/route
+apps/fproxy/clientManager.txt
+apps/mproxy/clientManager.txt
+apps/proxy/clientManager.txt
+apps/rpc/log

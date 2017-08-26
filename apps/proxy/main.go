@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 
 	log.SetLevel(log.WARN)
-	log.SetConsole(false)
+	log.SetConsole(true)
 	// log.SetLevel(log.ALL)
 	log.SetRollingFile("log", "proxy", 10, 5, log.MB)
 
@@ -41,5 +41,6 @@ func main() {
 	lbbutil.RegistSignal(func() {
 		lbbconsul.GConsulClient.Close()
 		s.Close()
+		lbbnet.CM.Free()
 	}, syscall.SIGTERM)
 }

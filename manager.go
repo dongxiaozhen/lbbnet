@@ -53,7 +53,7 @@ func NewClientManager() *ClientManager {
 }
 
 func (s *ClientManager) Free() {
-	s.ids["seq"] = seq
+	s.ids["seq"] = s.seq
 	data, err := json.Marshal(s.ids)
 	if err != nil {
 		log.Error("Marsha clientManager ids err", err)

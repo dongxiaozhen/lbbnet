@@ -85,6 +85,7 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 	}
 	s := CM.GetClientById(data.From2)
 	if s == nil {
+		log.Debug("SP discard -->", data.PacketType, data.SeqId, string(data.Data))
 		return
 	}
 	s.WriteData(data)

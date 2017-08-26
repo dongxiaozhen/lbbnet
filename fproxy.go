@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dongxiaozhen/lbbref/goref"
+	"github.com/dongxiaozhen/lbbutil"
 	log "github.com/donnie4w/go-logger/logger"
 )
 
@@ -20,6 +21,7 @@ func (h *FCproxy) OnNetMade(t *Transport) {
 func (h *FCproxy) OnNetLost(t *Transport) {
 	log.Debug("FCP-------------s lost net")
 	CM.RemoveClient(t)
+	h.Del(lbbutil.ToUint64(t.GetRemoteId()))
 }
 
 func (h *FCproxy) OnNetData(data *NetPacket) {

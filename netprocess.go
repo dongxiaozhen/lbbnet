@@ -45,8 +45,7 @@ func (h *NetProcess) runDown() {
 			continue
 		}
 		time.Sleep(6 * time.Second)
-		for i := 0; i < ls; i++ {
-			d := <-h.DownQueue
+		for d := range h.DownQueue {
 			trp, ok := h.ids[d.Rw.GetRemoteId()]
 			if ok {
 				log.Warn("lbb down queue second_send ", d.PacketType, d.SeqId, d.UserId, d.From1, d.From2)

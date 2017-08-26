@@ -50,7 +50,12 @@ func (s *SessionManager) Set(uid uint64, tsp *Transport) bool {
 	return false
 }
 func (s *SessionManager) Del(uid uint64) {
-	s.Lock()
-	delete(s.mp, uid)
-	s.Unlock()
+	s.RLock()
+	_, ok := s.mp[uid]
+	s.RUnlock()
+	if ok {
+		s.Lock()
+		delete(s.mp, uid)
+		s.Unlock()
+	}
 }
