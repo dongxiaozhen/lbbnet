@@ -8,13 +8,24 @@ import (
 )
 
 type MSproxy struct {
+	cm         *ClientManager
+	psm        *PServerManager
 	ServerInfo []byte
 	ServerId   string
 }
 
+func NewMSproxy(serverId string, serverInfo []byte) *MSproxy {
+	s := &MSproxy{}
+	s.cm = NewClientManager()
+	s.sm = NewServerManager()
+	s.ServerId = serverId
+	s.ServerInfo = serverInfo
+	return s
+}
+
 func (h *MSproxy) reverseRegisterService() {
 	log.Warn("MSP--------->reverseRegister")
-	for _, t := range CM.GetClients() {
+	for _, t := range h.cm.GetClients() {
 		p := &NetPacket{PacketType: PTypeReverseRegistServer, ReqType: MTypeOneWay}
 		err := t.WriteData(p)
 		if err != nil {
@@ -41,7 +52,7 @@ func (h *MSproxy) OnNetMade(t *Transport) {
 
 func (h *MSproxy) OnNetLost(t *Transport) {
 	log.Warn("MSP--------->lost", t.RemoteAddr())
-	PSM.RemServer(t)
+	h.psm.RemServer(t)
 	h.reverseRegisterService()
 }
 
@@ -53,7 +64,7 @@ func (h *MSproxy) OnNetData(data *NetPacket) {
 		} else {
 			log.Warn("MSP server type", data.Rw.RemoteAddr(), string(data.Data))
 		}
-		PSM.AddServer(data.Rw, ids)
+		h.psm.AddServer(data.Rw, ids)
 		// 反向注册
 		h.reverseRegisterService()
 		return
@@ -64,7 +75,7 @@ func (h *MSproxy) OnNetData(data *NetPacket) {
 		data.Data = buf
 	}
 
-	s := CM.GetClientById(data.From2)
+	s := h.cm.GetClientById(data.From2)
 	if s == nil {
 		log.Warn("MSproxy client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)
 		return
@@ -73,6 +84,15 @@ func (h *MSproxy) OnNetData(data *NetPacket) {
 }
 
 type MCproxy struct {
+	cm  *ClientManager
+	psm *PServerManager
+}
+
+func NewMCproxy() *MCproxy {
+	c := &MCproxy{}
+	c.cm = NewClientManager()
+	c.psm = NewPServerManager()
+	return c
 }
 
 func (h *MCproxy) OnNetMade(t *Transport) {
@@ -81,7 +101,7 @@ func (h *MCproxy) OnNetMade(t *Transport) {
 
 func (h *MCproxy) OnNetLost(t *Transport) {
 	log.Debug("MCP-------------s lost net")
-	CM.RemoveClient(t)
+	h.cm.RemoveClient(t)
 }
 
 func (h *MCproxy) OnNetData(data *NetPacket) {
@@ -89,19 +109,19 @@ func (h *MCproxy) OnNetData(data *NetPacket) {
 
 	if data.PacketType == PTypeNotifyServer && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))
-		CM.AddClient(data.Rw)
+		h.cm.AddClient(data.Rw)
 		log.Warn("add client notifyserver", string(data.Data))
 		return
 	}
 	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
 		log.Warn("MCP get register packet", data.Rw.RemoteAddr())
-		PSM.GetServerIds(data)
+		h.psm.GetServerIds(data)
 		return
 	}
-	id := CM.GetClient(data.Rw)
+	id := h.cm.GetClient(data.Rw)
 	data.From2 = uint32(id)
 
-	client := PSM.GetServer(data.UserId, data.PacketType)
+	client := h.psm.GetServer(data.UserId, data.PacketType)
 	if client == nil {
 		log.Warn("MCP get client emtpy", data.PacketType)
 		return

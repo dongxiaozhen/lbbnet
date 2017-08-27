@@ -21,8 +21,10 @@ func main() {
 	log.SetConsole(true)
 	log.SetRollingFile("log", "mproxy", 10, 5, log.MB)
 
-	var sproxy = &lbbnet.MSproxy{ServerId: lbbconsul.GetConsulServerId(), ServerInfo: lbbconsul.GetConsulInfo()}
-	var cproxy = &lbbnet.MCproxy{}
+	// var sproxy = &lbbnet.MSproxy{ServerId: lbbconsul.GetConsulServerId(), ServerInfo: lbbconsul.GetConsulInfo()}
+	// var cproxy = &lbbnet.MCproxy{}
+	var sproxy = lbbnet.NewMSproxy(lbbconsul.GetConsulServerId(), lbbconsul.GetConsulInfo())
+	var cproxy = lbbnet.NewMCproxy(uint32(agentId))
 
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), cproxy, 0)
 	if err != nil {

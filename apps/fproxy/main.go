@@ -25,8 +25,10 @@ func main() {
 	log.SetConsole(true)
 	log.SetRollingFile("log", "fproxy", 10, 5, log.MB)
 
-	var sproxy = &lbbnet.FSproxy{ServerId: lbbconsul.GetConsulServerId(), ServerInfo: lbbconsul.GetConsulInfo()}
-	var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
+	// var sproxy = &lbbnet.FSproxy{ServerId: lbbconsul.GetConsulServerId(), ServerInfo: lbbconsul.GetConsulInfo()}
+	// var cproxy = &lbbnet.FCproxy{Agent: uint32(agentId), SessionManager: lbbnet.NewSessionManager()}
+	var sproxy = lbbnet.NewFSproxy(lbbconsul.GetConsulServerId(), lbbconsul.GetConsulInfo())
+	var cproxy = lbbnet.NewFCproxy(uint32(agentId))
 	s, err := lbbnet.NewTServer(fmt.Sprintf("%s:%d", lbbconsul.Ccfg.Ip, lbbconsul.Ccfg.Port), cproxy, 0)
 	if err != nil {
 		log.Warn("create server err", err)

@@ -6,6 +6,15 @@ import (
 )
 
 type Cproxy struct {
+	cm *ClientManager
+	sm *ServerManager
+}
+
+func NewCproxy() *Cproxy {
+	s := &Cproxy{}
+	s.cm = NewClientManager()
+	s.sm = NewServerManager()
+	return s
 }
 
 func (h *Cproxy) OnNetMade(t *Transport) {
@@ -14,7 +23,7 @@ func (h *Cproxy) OnNetMade(t *Transport) {
 
 func (h *Cproxy) OnNetLost(t *Transport) {
 	log.Debug("CP lost net", t.RemoteAddr())
-	CM.RemoveClient(t)
+	h.cm.RemoveClient(t)
 }
 
 func (h *Cproxy) OnNetData(data *NetPacket) {
@@ -22,14 +31,14 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 
 	if data.PacketType == PTypeNotifyServer && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))
-		CM.AddClient(data.Rw)
+		h.cm.AddClient(data.Rw)
 		return
 	}
 
-	id := CM.GetClient(data.Rw)
+	id := h.cm.GetClient(data.Rw)
 	data.From2 = uint32(id)
 
-	client := SM.GetServer(data.UserId)
+	client := h.sm.GetServer(data.UserId)
 	if client == nil {
 		log.Warn("Cp get client emtpy")
 		return
@@ -38,13 +47,24 @@ func (h *Cproxy) OnNetData(data *NetPacket) {
 }
 
 type Sproxy struct {
+	cm         *ClientManager
+	sm         *ServerManager
 	ServerInfo []byte
 	ServerId   string
 }
 
+func NewSproxy(serverId string, serverInfo []byte) *Sproxy {
+	s := &Sproxy{}
+	s.cm = NewClientManager()
+	s.sm = NewServerManager()
+	s.ServerId = serverId
+	s.ServerInfo = serverInfo
+	return s
+}
+
 func (h *Sproxy) reverseRegisterService() {
 	log.Warn("SP--------->reverseRegister")
-	for _, t := range CM.GetClients() {
+	for _, t := range h.cm.GetClients() {
 		p := &NetPacket{PacketType: PTypeReverseRegistServer, ReqType: MTypeOneWay}
 		err := t.WriteData(p)
 		if err != nil {
@@ -62,7 +82,7 @@ func (h *Sproxy) registerServiceId(t *Transport) error {
 
 func (h *Sproxy) OnNetMade(t *Transport) {
 	log.Warn("SP made---------> ", t.RemoteAddr())
-	SM.AddServer(t)
+	h.sm.AddServer(t)
 	err := h.registerServiceId(t)
 	if err != nil {
 		log.Error("SP send server register", t.RemoteAddr())
@@ -72,7 +92,7 @@ func (h *Sproxy) OnNetMade(t *Transport) {
 
 func (h *Sproxy) OnNetLost(t *Transport) {
 	log.Warn("SP lost---------> ", t.RemoteAddr())
-	SM.RemServer(t)
+	h.sm.RemServer(t)
 	h.reverseRegisterService()
 }
 
@@ -83,7 +103,7 @@ func (h *Sproxy) OnNetData(data *NetPacket) {
 		buf = append(buf, data.Data...)
 		data.Data = buf
 	}
-	s := CM.GetClientById(data.From2)
+	s := h.cm.GetClientById(data.From2)
 	if s == nil {
 		log.Debug("SP discard -->", data.PacketType, data.SeqId, string(data.Data))
 		return

@@ -10,8 +10,19 @@ import (
 )
 
 type FCproxy struct {
+	cm    *ClientManager
+	psm   *PServerManager
 	Agent uint32
 	*SessionManager
+}
+
+func NewFCproxy(agent uint32) *FCproxy {
+	c := &FCproxy{}
+	c.cm = NewClientManager()
+	c.psm = NewPServerManager()
+	c.Agent = agent
+	c.SessionManager = NewSessionManager()
+	return c
 }
 
 func (h *FCproxy) OnNetMade(t *Transport) {
@@ -20,7 +31,7 @@ func (h *FCproxy) OnNetMade(t *Transport) {
 
 func (h *FCproxy) OnNetLost(t *Transport) {
 	log.Debug("FCP-------------s lost net")
-	CM.RemoveClient(t)
+	h.cm.RemoveClient(t)
 	h.Del(lbbutil.ToUint64(t.GetRemoteId()))
 }
 
@@ -30,7 +41,7 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 
 	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
 		log.Warn("FCp remote get Regist-->", data.Rw.RemoteAddr())
-		PSM.GetServerIds(data)
+		h.psm.GetServerIds(data)
 		return
 	}
 
@@ -44,17 +55,17 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 		if data.PacketType == PTypeLogin {
 			h.Set(data.UserId, data.Rw)
 			data.Rw.SetRemoteId(fmt.Sprintf("%d", data.UserId))
-			CM.AddClient(data.Rw)
+			h.cm.AddClient(data.Rw)
 		} else {
 			// not login
 			return
 		}
 	}
 
-	id := CM.GetClient(data.Rw)
+	id := h.cm.GetClient(data.Rw)
 	data.From1 = uint32(id)
 
-	client := PSM.GetServer(data.UserId, data.PacketType)
+	client := h.psm.GetServer(data.UserId, data.PacketType)
 	if client == nil {
 		log.Warn("FCp get client emtpy", data.PacketType)
 		return
@@ -63,8 +74,19 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 }
 
 type FSproxy struct {
+	cm         *ClientManager
+	psm        *PServerManager
 	ServerInfo []byte
 	ServerId   string
+}
+
+func NewFSproxy(serverId string, serverInfo []byte) *FSproxy {
+	s := &FSproxy{}
+	s.cm = NewClientManager()
+	s.psm = NewPServerManager()
+	s.ServerId = serverId
+	s.ServerInfo = serverInfo
+	return s
 }
 
 func (h *FSproxy) registerService(t *Transport) error {
@@ -83,7 +105,7 @@ func (h *FSproxy) OnNetMade(t *Transport) {
 
 func (h *FSproxy) OnNetLost(t *Transport) {
 	log.Warn("FSP--------->lost", t.RemoteAddr())
-	PSM.RemServer(t)
+	h.psm.RemServer(t)
 }
 
 func (h *FSproxy) OnNetData(data *NetPacket) {
@@ -94,7 +116,7 @@ func (h *FSproxy) OnNetData(data *NetPacket) {
 		} else {
 			log.Warn("server type", data.Rw.RemoteAddr(), string(data.Data))
 		}
-		PSM.AddServer(data.Rw, ids)
+		h.psm.AddServer(data.Rw, ids)
 		return
 	} else if data.PacketType == PTypeReverseRegistServer && data.ReqType == MTypeOneWay {
 		err := h.registerService(data.Rw)
@@ -108,7 +130,7 @@ func (h *FSproxy) OnNetData(data *NetPacket) {
 		buf = append(buf, data.Data...)
 		data.Data = buf
 	}
-	s := CM.GetClientById(data.From1)
+	s := h.cm.GetClientById(data.From1)
 	if s == nil {
 		log.Warn("FSp client off-discard data", data.UserId, data.From1, data.From2, data.SeqId, data.PacketType)
 		return
