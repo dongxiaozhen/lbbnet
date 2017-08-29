@@ -17,7 +17,7 @@ type MSproxy struct {
 func NewMSproxy(serverId string, serverInfo []byte) *MSproxy {
 	s := &MSproxy{}
 	s.cm = NewClientManager()
-	s.sm = NewServerManager()
+	s.psm = NewPServerManager()
 	s.ServerId = serverId
 	s.ServerInfo = serverInfo
 	return s

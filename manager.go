@@ -12,10 +12,6 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
-var PSM = NewPServerManager()
-var CM = NewClientManager()
-var SM = NewServerManager()
-
 type ClientManager struct {
 	seq     uint32
 	clients map[*Transport]uint32
