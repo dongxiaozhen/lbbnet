@@ -16,11 +16,8 @@ type FCproxy struct {
 	*SessionManager
 }
 
-func NewFCproxy(agent uint32) *FCproxy {
-	c := &FCproxy{}
-	c.cm = NewClientManager()
-	c.psm = NewPServerManager()
-	c.Agent = agent
+func NewFCproxy(cm *ClientManager, psm *PServerManager, agent uint32) *FCproxy {
+	c := &FCproxy{cm: cm, psm: psm, Agent: agent}
 	c.SessionManager = NewSessionManager()
 	return c
 }
@@ -39,7 +36,7 @@ func (h *FCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("FCproxy_OnData").Deref()
 	data.Agent = h.Agent
 
-	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
+	if data.PacketType == PTypeSysRegistServer && data.ReqType == MTypeCall {
 		log.Warn("FCp remote get Regist-->", data.Rw.RemoteAddr())
 		h.psm.GetServerIds(data)
 		return
@@ -80,18 +77,14 @@ type FSproxy struct {
 	ServerId   string
 }
 
-func NewFSproxy(serverId string, serverInfo []byte) *FSproxy {
-	s := &FSproxy{}
-	s.cm = NewClientManager()
-	s.psm = NewPServerManager()
-	s.ServerId = serverId
-	s.ServerInfo = serverInfo
+func NewFSproxy(cm *ClientManager, psm *PServerManager, serverId string, serverInfo []byte) *FSproxy {
+	s := &FSproxy{cm: cm, psm: psm, ServerId: serverId, ServerInfo: serverInfo}
 	return s
 }
 
 func (h *FSproxy) registerService(t *Transport) error {
-	p1 := &NetPacket{PacketType: PTypeNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
-	p := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
+	p1 := &NetPacket{PacketType: PTypeSysNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
+	p := &NetPacket{PacketType: PTypeSysRegistServer, ReqType: MTypeCall}
 	t.WriteData(p1)
 	return t.WriteData(p)
 }
@@ -109,7 +102,7 @@ func (h *FSproxy) OnNetLost(t *Transport) {
 }
 
 func (h *FSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeReply {
+	if data.PacketType == PTypeSysRegistServer && data.ReqType == MTypeReply {
 		var ids []uint32
 		if err := json.Unmarshal(data.Data, &ids); err != nil {
 			log.Error("FSP server id not register", data.Rw.RemoteAddr())
@@ -118,7 +111,7 @@ func (h *FSproxy) OnNetData(data *NetPacket) {
 		}
 		h.psm.AddServer(data.Rw, ids)
 		return
-	} else if data.PacketType == PTypeReverseRegistServer && data.ReqType == MTypeOneWay {
+	} else if data.PacketType == PTypeSysReverseRegistServer && data.ReqType == MTypeOneWay {
 		err := h.registerService(data.Rw)
 		if err != nil {
 			log.Error("FSP reverse server regist response  register err", data.Rw.RemoteAddr(), err)

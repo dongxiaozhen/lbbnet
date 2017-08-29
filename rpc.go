@@ -1,7 +1,6 @@
 package lbbnet
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -11,8 +10,6 @@ import (
 
 // 统一管理定时时间
 var gclock = clock.NewClock()
-
-var ErrRpcTimeOut = errors.New("rpc 请求超时")
 
 type RpcRet struct {
 	c chan *NetPacket
@@ -96,7 +93,7 @@ func (p *Rpc) Logout(userId uint64) (*NetPacket, error) {
 	return p.call(t)
 }
 func (p *Rpc) Servers() (*NetPacket, error) {
-	t := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
+	t := &NetPacket{PacketType: PTypeSysRegistServer, ReqType: MTypeCall}
 	return p.call(t)
 }
 

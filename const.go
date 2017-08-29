@@ -1,12 +1,19 @@
 package lbbnet
 
-// package  type
-const PTypeRegistServer uint32 = 0 // 向服务请求服务ID
-const PTypeNotifyServer uint32 = 1 // 向客户端发送自己的serverID
+import "errors"
 
-const PTypeLogin uint32 = 10
-const PTypeLogout uint32 = 11
-const PTypeReverseRegistServer uint32 = 0xFFFFFFFF // 向客户端发送服务ID变化请求
+// package type  系统消息ID 定义
+const (
+	PTypeSysRegistServer        uint32 = iota // 向服务请求服务ID
+	PTypeSysNotifyServer                      // 向客户端发送自己的serverID
+	PTypeSysReverseRegistServer               // 向客户端发送服务ID变化请求
+)
+
+// 业务层消息ID定义
+const (
+	PTypeLogin  uint32 = 10000 + iota // 登录
+	PTypeLogout                       // 退出
+)
 
 // message type call,reply,oneway
 const (
@@ -15,3 +22,14 @@ const (
 	MTypeOneWay
 	MTypeRoute
 )
+
+// net packet data length limit
+var MaxSendPackets uint32 = 100
+
+// err define
+var ErrTransportClose = errors.New("链接断开")
+var ErrEmptyPacket = errors.New("empty packet")
+var ErrMaxPacketLen = errors.New("packet data length overhead")
+var ErrDataLenLimit = errors.New("data len not enough")
+var ErrRpcTimeOut = errors.New("rpc 请求超时")
+var ErrFuncFind = errors.New("函数已经注册")

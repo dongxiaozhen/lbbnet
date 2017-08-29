@@ -14,19 +14,15 @@ type MSproxy struct {
 	ServerId   string
 }
 
-func NewMSproxy(serverId string, serverInfo []byte) *MSproxy {
-	s := &MSproxy{}
-	s.cm = NewClientManager()
-	s.psm = NewPServerManager()
-	s.ServerId = serverId
-	s.ServerInfo = serverInfo
+func NewMSproxy(cm *ClientManager, psm *PServerManager, serverId string, serverInfo []byte) *MSproxy {
+	s := &MSproxy{cm: cm, psm: psm, ServerId: serverId, ServerInfo: serverInfo}
 	return s
 }
 
 func (h *MSproxy) reverseRegisterService() {
 	log.Warn("MSP--------->reverseRegister")
 	for _, t := range h.cm.GetClients() {
-		p := &NetPacket{PacketType: PTypeReverseRegistServer, ReqType: MTypeOneWay}
+		p := &NetPacket{PacketType: PTypeSysReverseRegistServer, ReqType: MTypeOneWay}
 		err := t.WriteData(p)
 		if err != nil {
 			log.Error("reverse register server err: s=", t.RemoteAddr(), err)
@@ -37,8 +33,8 @@ func (h *MSproxy) reverseRegisterService() {
 }
 
 func (h *MSproxy) registerService(t *Transport) error {
-	p1 := &NetPacket{PacketType: PTypeNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
-	p := &NetPacket{PacketType: PTypeRegistServer, ReqType: MTypeCall}
+	p1 := &NetPacket{PacketType: PTypeSysNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
+	p := &NetPacket{PacketType: PTypeSysRegistServer, ReqType: MTypeCall}
 	t.WriteData(p1)
 	return t.WriteData(p)
 }
@@ -57,7 +53,7 @@ func (h *MSproxy) OnNetLost(t *Transport) {
 }
 
 func (h *MSproxy) OnNetData(data *NetPacket) {
-	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeReply {
+	if data.PacketType == PTypeSysRegistServer && data.ReqType == MTypeReply {
 		var ids []uint32
 		if err := json.Unmarshal(data.Data, &ids); err != nil {
 			log.Error("MSP server id not register", data.Rw.RemoteAddr())
@@ -88,10 +84,8 @@ type MCproxy struct {
 	psm *PServerManager
 }
 
-func NewMCproxy() *MCproxy {
-	c := &MCproxy{}
-	c.cm = NewClientManager()
-	c.psm = NewPServerManager()
+func NewMCproxy(cm *ClientManager, psm *PServerManager) *MCproxy {
+	c := &MCproxy{cm, psm}
 	return c
 }
 
@@ -107,13 +101,13 @@ func (h *MCproxy) OnNetLost(t *Transport) {
 func (h *MCproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("MCP_OnData").Deref()
 
-	if data.PacketType == PTypeNotifyServer && data.ReqType == MTypeOneWay {
+	if data.PacketType == PTypeSysNotifyServer && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))
 		h.cm.AddClient(data.Rw)
 		log.Warn("add client notifyserver", string(data.Data))
 		return
 	}
-	if data.PacketType == PTypeRegistServer && data.ReqType == MTypeCall {
+	if data.PacketType == PTypeSysRegistServer && data.ReqType == MTypeCall {
 		log.Warn("MCP get register packet", data.Rw.RemoteAddr())
 		h.psm.GetServerIds(data)
 		return

@@ -20,28 +20,28 @@ type Hello struct {
 
 func (h *Hello) Init() {
 	h.NetProcess.Init()
-	if stype == 101 {
-		h.RegisterFunc(101, fa)
-	} else if stype == 102 {
-		h.RegisterFunc(102, fb)
-	} else if stype == 103 {
-		h.RegisterFunc(103, fc)
-	} else if stype == 104 {
-		h.RegisterFunc(104, fd)
-	} else if stype == 105 {
-		h.RegisterFunc(105, fe)
-	} else if stype == 106 {
-		h.RegisterFunc(106, ff)
-	} else if stype == 107 {
-		h.RegisterFunc(107, fg)
-	} else if stype == 10 {
-		h.RegisterFunc(10, login)
-		h.RegisterFunc(11, logout)
-		h.RegisterFunc(108, h.fh)
-		h.RegisterFunc(109, h.fi)
+	if stype == 10001 {
+		h.RegisterFunc(10001, fa)
+	} else if stype == 10002 {
+		h.RegisterFunc(10002, fb)
+	} else if stype == 10003 {
+		h.RegisterFunc(10003, fc)
+	} else if stype == 10004 {
+		h.RegisterFunc(10004, fd)
+	} else if stype == 10005 {
+		h.RegisterFunc(10005, fe)
+	} else if stype == 10006 {
+		h.RegisterFunc(10006, ff)
+	} else if stype == 10007 {
+		h.RegisterFunc(10007, fg)
+	} else if stype == 10000 {
+		h.RegisterFunc(10000, login)
+		h.RegisterFunc(10001, logout)
+		h.RegisterFunc(10008, h.fh)
+		h.RegisterFunc(10009, h.fi)
 	} else {
-		h.RegisterFunc(108, h.fh)
-		h.RegisterFunc(109, h.fi)
+		h.RegisterFunc(10008, h.fh)
+		h.RegisterFunc(10009, h.fi)
 	}
 }
 func login(data *lbbnet.NetPacket) {

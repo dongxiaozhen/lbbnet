@@ -2,14 +2,11 @@ package lbbnet
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/dongxiaozhen/lbbsort"
 	log "github.com/donnie4w/go-logger/logger"
 )
-
-var ErrFuncFind = errors.New("函数已经注册")
 
 type NetProcess struct {
 	close      bool
@@ -59,7 +56,7 @@ func (h *NetProcess) runDown() {
 }
 
 func (h *NetProcess) RegisterServer() {
-	h.RegisterFunc(PTypeRegistServer, h.f)
+	h.RegisterFunc(PTypeSysRegistServer, h.f)
 }
 
 func (h *NetProcess) f(data *NetPacket) {
@@ -107,7 +104,7 @@ func (h *NetProcess) OnNetData(data *NetPacket) {
 	// log.Debug("process close", *data)
 	// return
 	// }
-	if data.PacketType == PTypeNotifyServer && data.ReqType == MTypeOneWay {
+	if data.PacketType == PTypeSysNotifyServer && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))
 		h.ids[string(data.Data)] = data.Rw
 		log.Warn("add notify server id", string(data.Data))

@@ -2,13 +2,15 @@ package lbbnet
 
 import (
 	"encoding/binary"
-	"errors"
+	"sync"
 
 	log "github.com/donnie4w/go-logger/logger"
 )
 
 var LenOfNetPacket = 42
 var LenOfPacket = LenOfNetPacket + 4
+
+var packPoll = sync.Pool{New: func() interface{} { return new(NetPacket) }}
 
 type NetPacket struct {
 	UserId     uint64 // 用户ID
@@ -24,8 +26,6 @@ type NetPacket struct {
 	From3      uint32 // 转发使用，跟踪信息路径(第三个代理使用)
 	Rw         *Transport
 }
-
-var ErrDataLenLimit = errors.New("data len not enough")
 
 func (t *NetPacket) Decoder(data []byte) error {
 	if len(data) < LenOfNetPacket {
@@ -96,4 +96,12 @@ func (t *NetPacket) GetRouteInfo() uint32 {
 		return 0
 	}
 	return binary.LittleEndian.Uint32(t.Data[LenOfPacket:])
+}
+
+func GetNetPack() *NetPacket {
+	return packPoll.Get().(*NetPacket)
+}
+
+func (t *NetPacket) Free() {
+	packPoll.Put(t)
 }

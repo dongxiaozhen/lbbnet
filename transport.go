@@ -3,7 +3,6 @@ package lbbnet
 import (
 	"bufio"
 	"encoding/binary"
-	"errors"
 	"io"
 	"net"
 	"sync"
@@ -12,7 +11,7 @@ import (
 	log "github.com/donnie4w/go-logger/logger"
 )
 
-var MaxSendPackets = 100
+var MaxSendPacketsInt = int(MaxSendPackets)
 
 type Transport struct {
 	con       *TSocket
@@ -55,8 +54,6 @@ func (c *TSocket) Write(b []byte) (n int, err error) {
 	return n, err
 }
 
-var ErrTransportClose = errors.New("链接断开")
-
 func NewTransport(con *net.TCPConn, timeout time.Duration) *Transport {
 	return &Transport{con: &TSocket{con, timeout}, readChan: make(chan []byte, 10), writeChan: make(chan []byte, 10)}
 }
@@ -82,7 +79,9 @@ func (t *Transport) ReadData() *NetPacket {
 
 	// 这里可以处理协议相关的解析工作
 	// Here you can deal with protocol related parsing work
-	p := &NetPacket{Rw: t}
+	// p := &NetPacket{Rw: t}
+	p := GetNetPack()
+	p.Rw = t
 	err := p.Decoder(s)
 	if err != nil {
 		log.Warn("t  decoder nil")
@@ -103,8 +102,6 @@ func (t *Transport) Close() {
 	close(t.writeChan)
 }
 
-var ErrEmptyPacket = errors.New("empty packet")
-
 func (t *Transport) WriteData(data *NetPacket) error {
 	t.RLock()
 	defer t.RUnlock()
@@ -118,7 +115,12 @@ func (t *Transport) WriteData(data *NetPacket) error {
 		return ErrEmptyPacket
 	}
 
+	d := data.Serialize()
+	if len(d) > MaxSendPacketsInt {
+		return ErrMaxPacketLen
+	}
 	t.writeChan <- data.Serialize()
+	data.Free()
 	log.Debug("----t writeData over")
 	return nil
 }
@@ -155,8 +157,7 @@ func (t *Transport) beginToRead() {
 			log.Debug("--------t read full begin", index, headLen)
 			n, err := io.ReadFull(r, buf[index:])
 			if err != nil {
-				e, ok := err.(net.Error)
-				if !ok || !e.Temporary() || try >= 3 {
+				if e, ok := err.(net.Error); !ok || !e.Temporary() || try >= 3 {
 					log.Warn("-->transport read err", err)
 					return
 				}
@@ -166,6 +167,10 @@ func (t *Transport) beginToRead() {
 			log.Debug("--------t read full", index, headLen)
 		}
 		log.Debug(" t read over")
+		if headLen > MaxSendPackets {
+			log.Debug("data lenth overhead: ", headLen, MaxSendPackets)
+			continue
+		}
 		t.readChan <- buf
 	}
 }
