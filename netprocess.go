@@ -56,7 +56,7 @@ func (h *NetProcess) runDown() {
 }
 
 func (h *NetProcess) RegisterServer() {
-	h.RegisterFunc(PTypeSysRegistServer, h.f)
+	h.RegisterFunc(PTypeSysObtainServices, h.f)
 }
 
 func (h *NetProcess) f(data *NetPacket) {
@@ -104,7 +104,7 @@ func (h *NetProcess) OnNetData(data *NetPacket) {
 	// log.Debug("process close", *data)
 	// return
 	// }
-	if data.PacketType == PTypeSysNotifyServer && data.ReqType == MTypeOneWay {
+	if data.PacketType == PTypeSysNotifyServerId && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))
 		h.ids[string(data.Data)] = data.Rw
 		log.Warn("add notify server id", string(data.Data))

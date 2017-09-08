@@ -93,7 +93,7 @@ func (p *Rpc) Logout(userId uint64) (*NetPacket, error) {
 	return p.call(t)
 }
 func (p *Rpc) Servers() (*NetPacket, error) {
-	t := &NetPacket{PacketType: PTypeSysRegistServer, ReqType: MTypeCall}
+	t := &NetPacket{PacketType: PTypeSysObtainServices, ReqType: MTypeCall}
 	return p.call(t)
 }
 

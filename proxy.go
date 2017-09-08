@@ -27,7 +27,7 @@ func (h *Cproxy) OnNetLost(t *Transport) {
 func (h *Cproxy) OnNetData(data *NetPacket) {
 	defer goref.Ref("proxy").Deref()
 
-	if data.PacketType == PTypeSysNotifyServer && data.ReqType == MTypeOneWay {
+	if data.PacketType == PTypeSysNotifyServerId && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))
 		h.cm.AddClient(data.Rw)
 		return
@@ -59,7 +59,7 @@ func NewSproxy(cm *ClientManager, sm *ServerManager, serverId string, serverInfo
 func (h *Sproxy) reverseRegisterService() {
 	log.Warn("SP--------->reverseRegister")
 	for _, t := range h.cm.GetClients() {
-		p := &NetPacket{PacketType: PTypeSysReverseRegistServer, ReqType: MTypeOneWay}
+		p := &NetPacket{PacketType: PTypeSysNotifyServicesChange, ReqType: MTypeOneWay}
 		err := t.WriteData(p)
 		if err != nil {
 			log.Error("SP reverse register server err: s=", t.RemoteAddr(), err)
@@ -70,7 +70,7 @@ func (h *Sproxy) reverseRegisterService() {
 }
 
 func (h *Sproxy) registerServiceId(t *Transport) error {
-	p1 := &NetPacket{PacketType: PTypeSysNotifyServer, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
+	p1 := &NetPacket{PacketType: PTypeSysNotifyServerId, ReqType: MTypeOneWay, Data: []byte(h.ServerId)}
 	return t.WriteData(p1)
 }
 

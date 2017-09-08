@@ -67,7 +67,7 @@ func (s *ClientManager) Free() {
 	}
 
 	log.Debug("-------send closeserver packet")
-	closePacket := &NetPacket{PacketType: PTypeSysCloseServer, ReqType: MTypeOneWay}
+	closePacket := &NetPacket{PacketType: PTypeSysNotifyCloseServer, ReqType: MTypeOneWay}
 	for t := range s.clients {
 		t.WriteData(closePacket)
 	}

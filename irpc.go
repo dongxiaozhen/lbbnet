@@ -57,7 +57,7 @@ func (p *IRpc) Open() error {
 
 func (p *IRpc) OnNetMade(t *Transport) {
 	log.Debug("---------made")
-	p1 := &NetPacket{PacketType: PTypeSysNotifyServer, ReqType: MTypeOneWay, Data: []byte(lbbconsul.Ccfg.ServerId)}
+	p1 := &NetPacket{PacketType: PTypeSysNotifyServerId, ReqType: MTypeOneWay, Data: []byte(lbbconsul.Ccfg.ServerId)}
 	t.WriteData(p1)
 }
 
@@ -110,7 +110,7 @@ func (p *IRpc) OnNetData(t *NetPacket) {
 	p.Lock()
 	defer p.Unlock()
 
-	if t.PacketType == PTypeSysCloseServer && t.ReqType == MTypeOneWay {
+	if t.PacketType == PTypeSysNotifyCloseServer && t.ReqType == MTypeOneWay {
 		log.Debug("get PTypeSysCloseServer ", t.Rw.RemoteAddr())
 		go p.getServer()
 		return
@@ -136,7 +136,7 @@ func (p *IRpc) Call(packType uint32, userId uint64, data []byte) (*NetPacket, er
 }
 
 func (p *IRpc) Servers() (*NetPacket, error) {
-	t := &NetPacket{PacketType: PTypeSysRegistServer, ReqType: MTypeCall}
+	t := &NetPacket{PacketType: PTypeSysObtainServices, ReqType: MTypeCall}
 	return p.call(t)
 }
 

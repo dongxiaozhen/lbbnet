@@ -4,10 +4,10 @@ import "errors"
 
 // package type  系统消息ID 定义
 const (
-	PTypeSysRegistServer        uint32 = iota // 向服务请求服务ID
-	PTypeSysNotifyServer                      // 向客户端发送自己的serverID
-	PTypeSysReverseRegistServer               // 向客户端发送服务ID变化请求
-	PTypeSysCloseServer                       // 服务向客户端发送关闭通知
+	PTypeSysObtainServices       uint32 = iota // 向服务请求服务ID
+	PTypeSysNotifyServerId                     // 向客户端发送自己的serverID
+	PTypeSysNotifyServicesChange               // 向客户端发送服务ID变化请求
+	PTypeSysNotifyCloseServer                  // 服务向客户端发送关闭通知
 )
 
 // 业务层消息ID定义
