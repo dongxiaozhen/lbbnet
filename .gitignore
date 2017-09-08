@@ -28,3 +28,6 @@ apps/fproxy/clientManager.txt
 apps/mproxy/clientManager.txt
 apps/proxy/clientManager.txt
 apps/rpc/log
+apps/irpc/irpc
+apps/irpc/log/
+apps/mproxy2/

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"syscall"
+	"time"
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbnet"
@@ -44,5 +45,6 @@ func main() {
 		lbbconsul.GConsulClient.Close()
 		s.Close()
 		cm.Free()
+		time.Sleep(10 * time.Second)
 	}, syscall.SIGTERM)
 }

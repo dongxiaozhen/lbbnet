@@ -7,6 +7,7 @@ const (
 	PTypeSysRegistServer        uint32 = iota // 向服务请求服务ID
 	PTypeSysNotifyServer                      // 向客户端发送自己的serverID
 	PTypeSysReverseRegistServer               // 向客户端发送服务ID变化请求
+	PTypeSysCloseServer                       // 服务向客户端发送关闭通知
 )
 
 // 业务层消息ID定义
@@ -33,3 +34,5 @@ var ErrMaxPacketLen = errors.New("packet data length overhead")
 var ErrDataLenLimit = errors.New("data len not enough")
 var ErrRpcTimeOut = errors.New("rpc 请求超时")
 var ErrFuncFind = errors.New("函数已经注册")
+var ErrEmptyConsulServer = errors.New("consul empty server ")
+var ErrConsulDiscover = errors.New("consul discover error ")

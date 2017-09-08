@@ -86,6 +86,7 @@ func (p *TClient) recon() {
 	p.mu.Lock()
 	if p.close {
 		p.mu.Unlock()
+		log.Debug("tclient close, so not recon")
 		return
 	}
 	p.mu.Unlock()

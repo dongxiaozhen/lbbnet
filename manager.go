@@ -65,6 +65,12 @@ func (s *ClientManager) Free() {
 		log.Error("write file err ", err)
 		return
 	}
+
+	log.Debug("-------send closeserver packet")
+	closePacket := &NetPacket{PacketType: PTypeSysCloseServer, ReqType: MTypeOneWay}
+	for t := range s.clients {
+		t.WriteData(closePacket)
+	}
 }
 
 func (s *ClientManager) RemoveClient(t *Transport) {
