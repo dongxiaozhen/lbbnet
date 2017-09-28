@@ -62,35 +62,3 @@ func MonitorNet(duration int, foundServer string, sp Protocol, pp Manager) {
 		oldSer = services
 	}
 }
-
-func FoundRpc(foundServer string, nowServer string) (*lbbconsul.ServiceInfo, error) {
-	err := lbbconsul.GConsulClient.DiscoverAliveService(foundServer)
-	if err != nil {
-		log.Warn("discover server err", foundServer)
-		return nil, ErrConsulDiscover
-	}
-	services, ok := lbbconsul.GConsulClient.GetAllService(foundServer)
-	if !ok {
-		log.Warn("not find server err", foundServer)
-		return nil, ErrEmptyConsulServer
-	}
-	if len(services) == 1 {
-		nowServer = ""
-	}
-
-	var serverInfo *lbbconsul.ServiceInfo
-	if nowServer == "" {
-		for _, v := range services {
-			serverInfo = v
-			break
-		}
-	} else {
-		for k, v := range services {
-			if k != nowServer {
-				serverInfo = v
-				break
-			}
-		}
-	}
-	return serverInfo, nil
-}

@@ -33,7 +33,7 @@ func NewIRpc(rpcName string, timeout time.Duration) *IRpc {
 }
 
 func (p *IRpc) Open() error {
-	svr, err := FoundRpc(p.serverName, p.nowServer)
+	svr, err := lbbconsul.FoundRpcWithBalance(p.serverName, p.nowServer)
 	if err != nil {
 		log.Error("open iprc err: ", err)
 		return err
