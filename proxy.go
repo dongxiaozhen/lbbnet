@@ -1,6 +1,7 @@
 package lbbnet
 
 import (
+	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbref/goref"
 	log "github.com/donnie4w/go-logger/logger"
 )
@@ -25,7 +26,7 @@ func (h *Cproxy) OnNetLost(t *Transport) {
 }
 
 func (h *Cproxy) OnNetData(data *NetPacket) {
-	defer goref.Ref("proxy").Deref()
+	defer goref.Ref(lbbconsul.GetConsulServerId()).Deref()
 
 	if data.PacketType == PTypeSysNotifyServerId && data.ReqType == MTypeOneWay {
 		data.Rw.SetRemoteId(string(data.Data))

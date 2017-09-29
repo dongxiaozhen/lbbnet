@@ -7,6 +7,7 @@ import (
 
 	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbnet"
+	"github.com/dongxiaozhen/lbbref/goref"
 	"github.com/dongxiaozhen/lbbutil"
 	log "github.com/donnie4w/go-logger/logger"
 )
@@ -24,6 +25,7 @@ func main() {
 	// log.SetLevel(log.ALL)
 	log.SetConsole(true)
 	log.SetRollingFile("log", "fproxy", 10, 5, log.MB)
+	goref.SetConsulKey(lbbconsul.GetConsulServerId())
 
 	cm := lbbnet.NewClientManager()
 	psm := lbbnet.NewPServerManager()

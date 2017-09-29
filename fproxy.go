@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/dongxiaozhen/lbbconsul"
 	"github.com/dongxiaozhen/lbbref/goref"
 	"github.com/dongxiaozhen/lbbutil"
 	log "github.com/donnie4w/go-logger/logger"
@@ -33,7 +34,7 @@ func (h *FCproxy) OnNetLost(t *Transport) {
 }
 
 func (h *FCproxy) OnNetData(data *NetPacket) {
-	defer goref.Ref("FCproxy_OnData").Deref()
+	defer goref.Ref(lbbconsul.GetConsulServerId()).Deref()
 	data.Agent = h.Agent
 
 	if data.PacketType == PTypeSysObtainServices && data.ReqType == MTypeCall {
